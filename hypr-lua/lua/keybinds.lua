@@ -284,8 +284,8 @@ bind(M("code:40"), util.toggle_float, "Float current window (fit to screen)")   
 section("Workspaces")
 bind(M("SHIFT + code:30"), hl.dsp.window.move({ workspace = "special" }), "move to special workspace") -- U
 bind(M("code:30"), hl.dsp.workspace.toggle_special("special"), "toggle special workspace")       -- U
--- scratchpad: `caelestia toggle` starts Telegram if needed and moves its windows to special:telegram (cli.json "toggles")
-bind(M("code:49"), exec("caelestia toggle telegram"), "Telegram scratchpad (show/hide)")          -- ` / ё
+-- scratchpad: pulls Telegram from its workspace, hiding puts it back there (lua/scratchpad.lua)
+bind(M("code:49"), require("lua.scratchpad").toggle, "Telegram scratchpad (show/hide)")          -- ` / ё
 bind(M("code:38"), exec("qs ipc -c overview call overview toggle"), "desktop overview")           -- A
 section("Media")
 bind(M("SHIFT + code:43"), exec(S .. "/Toggle-Active-Window-Audio.sh"), "Toggle Mute/Unmute for Active-Window") -- H
