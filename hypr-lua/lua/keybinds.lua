@@ -192,11 +192,11 @@ bind("XF86AudioStop", global("mediaStop"), "stop", locked)
 
 -- Screenshot
 section("Capture")
-bind(M("Print"), exec(S .. "/ScreenShot.sh --now"), "screenshot now")
+bind(M("Print"), exec(S .. "/screenshot.sh now"), "screenshot now")
 bind(M("SHIFT + Print"), global("screenshotFreezeClip"), "screenshot area (frozen) -> clipboard")
-bind(M("CTRL + Print"), exec(S .. "/ScreenShot.sh --in5"), "screenshot in 5s")
-bind(M("CTRL + SHIFT + Print"), exec(S .. "/ScreenShot.sh --in10"), "screenshot in 10s")
-bind("ALT + Print", exec(S .. "/ScreenShot.sh --active"), "screenshot active window")
+bind(M("CTRL + Print"), exec(S .. "/screenshot.sh in 5"), "screenshot in 5s")
+bind(M("CTRL + SHIFT + Print"), exec(S .. "/screenshot.sh in 10"), "screenshot in 10s")
+bind("ALT + Print", exec(S .. "/screenshot.sh active"), "screenshot active window")
 -- OCR: caelestia picker (patches/0007) -> tesseract rus+eng -> clipboard
 bind(M("SHIFT + code:28"), global("ocr"), "OCR area -> clipboard (text)")                          -- T
 -- Screen recording via the shell (patches/0008: keeps the bar indicator's timer/pause in sync);
@@ -266,11 +266,11 @@ bind("XF86TouchpadToggle", function()                                           
     hl.device({ name = v.touchpadDevice, enabled = touchpad_enabled })
     util.notify(touchpad_enabled and "Enabling Touchpad" or "Disabling Touchpad")
 end, "toggle touchpad")
-bind(M("F6"), exec(S .. "/ScreenShot.sh --now"), "screenshot")
+bind(M("F6"), exec(S .. "/screenshot.sh now"), "screenshot")
 bind(M("SHIFT + F6"), global("screenshotFreezeClip"), "screenshot area (frozen) -> clipboard")
-bind(M("CTRL + F6"), exec(S .. "/ScreenShot.sh --in5"), "screenshot (5s)")
-bind(M("ALT + F6"), exec(S .. "/ScreenShot.sh --in10"), "screenshot (10s)")
-bind("ALT + F6", exec(S .. "/ScreenShot.sh --active"), "screenshot (active window)")
+bind(M("CTRL + F6"), exec(S .. "/screenshot.sh in 5"), "screenshot (5s)")
+bind(M("ALT + F6"), exec(S .. "/screenshot.sh in 10"), "screenshot (10s)")
+bind("ALT + F6", exec(S .. "/screenshot.sh active"), "screenshot (active window)")
 
 ---------------------------------------------------------------- USER (UserConfigs/UserKeybinds.conf)
 section("Apps")
