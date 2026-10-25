@@ -261,11 +261,14 @@ bind("XF86Launch3", exec("asusctl led-mode -n"), "keyboard RGB profile")
 bind("XF86Launch4", exec("asusctl profile -n"), "fan profile")
 bind("XF86MonBrightnessDown", global("brightnessDown"), "brightness down", locked_repeating) -- was Brightness.sh
 bind("XF86MonBrightnessUp", global("brightnessUp"), "brightness up", locked_repeating)
-bind("XF86TouchpadToggle", function()                                               -- was TouchPad.sh
+local function toggle_touchpad()                                                    -- was TouchPad.sh
     touchpad_enabled = not (touchpad_enabled ~= false)
     hl.device({ name = v.touchpadDevice, enabled = touchpad_enabled })
     util.notify(touchpad_enabled and "Enabling Touchpad" or "Disabling Touchpad")
-end, "toggle touchpad")
+end
+bind("XF86TouchpadToggle", toggle_touchpad, "toggle touchpad")
+-- this laptop's touchpad key sends Super+Ctrl+F24 instead of XF86TouchpadToggle
+bind(M("CTRL + F24"), toggle_touchpad, "toggle touchpad (laptop key)")
 bind(M("F6"), exec(S .. "/screenshot.sh now"), "screenshot")
 bind(M("SHIFT + F6"), global("screenshotFreezeClip"), "screenshot area (frozen) -> clipboard")
 bind(M("CTRL + F6"), exec(S .. "/screenshot.sh in 5"), "screenshot (5s)")
