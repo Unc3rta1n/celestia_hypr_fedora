@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Open ghostty in a directory (or a file's directory). Single-instance ghostty ignores normal CLI
+# flags, so go through `+new-window`; fall back to a fresh process if no instance is running.
+d=${1:-$HOME}
+[[ $d == file://* ]] && d=${d#file://}
+[[ -d $d ]] || d=$(dirname -- "$d")
+ghostty +new-window --working-directory="$d" 2>/dev/null || exec ghostty --working-directory="$d"

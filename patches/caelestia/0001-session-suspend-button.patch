@@ -1,0 +1,30 @@
+diff --git a/modules/session/Content.qml b/modules/session/Content.qml
+index 1b16e2f2..45fadeea 100644
+--- a/modules/session/Content.qml
++++ b/modules/session/Content.qml
+@@ -72,6 +72,16 @@ Column {
+         command: Config.session.commands.hibernate
+ 
+         KeyNavigation.up: shutdown
++        KeyNavigation.down: suspend
++    }
++
++    SessionButton {
++        id: suspend
++
++        icon: "bedtime"
++        command: ["systemctl", "suspend"]
++
++        KeyNavigation.up: hibernate
+         KeyNavigation.down: reboot
+     }
+ 
+@@ -81,7 +91,7 @@ Column {
+         icon: Config.session.icons.reboot
+         command: Config.session.commands.reboot
+ 
+-        KeyNavigation.up: hibernate
++        KeyNavigation.up: suspend
+     }
+ 
+     component SessionButton: IconButton {

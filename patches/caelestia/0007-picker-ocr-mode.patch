@@ -1,0 +1,123 @@
+diff --git a/modules/areapicker/AreaPicker.qml b/modules/areapicker/AreaPicker.qml
+index 76cc1039..b18e1825 100644
+--- a/modules/areapicker/AreaPicker.qml
++++ b/modules/areapicker/AreaPicker.qml
+@@ -14,6 +14,7 @@ Scope {
+         property bool freeze
+         property bool closing
+         property bool clipboardOnly
++        property bool ocr
+ 
+         Variants {
+             model: Screens.screens
+@@ -51,6 +52,7 @@ Scope {
+         function open(): void {
+             root.freeze = false;
+             root.closing = false;
++            root.ocr = false;
+             root.clipboardOnly = false;
+             root.activeAsync = true;
+         }
+@@ -58,6 +60,7 @@ Scope {
+         function openFreeze(): void {
+             root.freeze = true;
+             root.closing = false;
++            root.ocr = false;
+             root.clipboardOnly = false;
+             root.activeAsync = true;
+         }
+@@ -65,6 +68,7 @@ Scope {
+         function openClip(): void {
+             root.freeze = false;
+             root.closing = false;
++            root.ocr = false;
+             root.clipboardOnly = true;
+             root.activeAsync = true;
+         }
+@@ -72,10 +76,19 @@ Scope {
+         function openFreezeClip(): void {
+             root.freeze = true;
+             root.closing = false;
++            root.ocr = false;
+             root.clipboardOnly = true;
+             root.activeAsync = true;
+         }
+ 
++        function openOcr(): void {
++            root.freeze = true;
++            root.closing = false;
++            root.ocr = true;
++            root.clipboardOnly = false;
++            root.activeAsync = true;
++        }
++
+         target: "picker"
+     }
+ 
+@@ -87,6 +100,7 @@ Scope {
+         onPressed: {
+             root.freeze = false;
+             root.closing = false;
++            root.ocr = false;
+             root.clipboardOnly = false;
+             root.activeAsync = true;
+         }
+@@ -100,6 +114,7 @@ Scope {
+         onPressed: {
+             root.freeze = true;
+             root.closing = false;
++            root.ocr = false;
+             root.clipboardOnly = false;
+             root.activeAsync = true;
+         }
+@@ -113,6 +128,7 @@ Scope {
+         onPressed: {
+             root.freeze = false;
+             root.closing = false;
++            root.ocr = false;
+             root.clipboardOnly = true;
+             root.activeAsync = true;
+         }
+@@ -126,8 +142,23 @@ Scope {
+         onPressed: {
+             root.freeze = true;
+             root.closing = false;
++            root.ocr = false;
+             root.clipboardOnly = true;
+             root.activeAsync = true;
+         }
+     }
++
++    // qmllint disable unresolved-type
++    CustomShortcut {
++        // qmllint enable unresolved-type
++        name: "ocr"
++        description: "Recognise text in an area (freeze mode) -> clipboard"
++        onPressed: {
++            root.freeze = true;
++            root.closing = false;
++            root.ocr = true;
++            root.clipboardOnly = false;
++            root.activeAsync = true;
++        }
++    }
+ }
+diff --git a/modules/areapicker/Picker.qml b/modules/areapicker/Picker.qml
+index 68b49c39..3cf49b38 100644
+--- a/modules/areapicker/Picker.qml
++++ b/modules/areapicker/Picker.qml
+@@ -83,7 +83,13 @@ MouseArea {
+     function save(): void {
+         const tmpfile = Qt.resolvedUrl(`/tmp/caelestia-picker-${Quickshell.processId}-${Date.now()}.png`);
+         CUtils.saveItem(screencopy, tmpfile, Qt.rect(Math.ceil(rsx), Math.ceil(rsy), Math.floor(sw), Math.floor(sh)), path => {
+-            if (root.loader.clipboardOnly) {
++            if (root.loader.ocr) {
++                // tesseract (rus+eng) -> clipboard; the notification shows what was recognised
++                const script = 't=$(tesseract "$1" - -l rus+eng 2>/dev/null | tr -d "\\f"); rm -f "$1"; '
++                    + 'if [ -n "$t" ]; then printf "%s" "$t" | wl-copy; notify-send -a caelestia-cli -i edit-copy "$2" "$t"; '
++                    + 'else notify-send -a caelestia-cli -u low "$3"; fi';
++                Quickshell.execDetached(["sh", "-c", script, "sh", path, Tr.tr("Text copied"), Tr.tr("No text recognised")]);
++            } else if (root.loader.clipboardOnly) {
+                 // Copy + keep a file in ~/Pictures/Screenshots; clicking the notification opens swappy
+                 const script = 'f="$HOME/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"; mkdir -p "${f%/*}"; cp "$1" "$f"; '
+                     + 'wl-copy --type image/png < "$f"; '

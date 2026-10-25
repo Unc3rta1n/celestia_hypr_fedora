@@ -1,0 +1,70 @@
+diff --git a/components/ScreenState.qml b/components/ScreenState.qml
+index 7ec19090..712a8930 100644
+--- a/components/ScreenState.qml
++++ b/components/ScreenState.qml
+@@ -12,6 +12,9 @@ PersistentProperties {
+     property bool utilities
+     property bool sidebar
+ 
++    // Text to prefill the launcher search with when it opens (set via `drawers openLauncher`)
++    property string launcherPreset
++
+     // Dashboard state
+     property int dashboardTab
+     property date dashboardDate: new Date()
+diff --git a/daemons/Shortcuts.qml b/daemons/Shortcuts.qml
+index adc4e4ce..537cba02 100644
+--- a/daemons/Shortcuts.qml
++++ b/daemons/Shortcuts.qml
+@@ -110,6 +110,14 @@ Scope {
+     }
+ 
+     IpcHandler {
++        function openLauncher(text: string): void {
++            if (root.hasFullscreen)
++                return;
++            const screenState = ShellState.forActive();
++            screenState.launcherPreset = text;
++            screenState.launcher = true;
++        }
++
+         function toggle(drawer: string): void {
+             if (list().split("\n").includes(drawer)) {
+                 if (root.hasFullscreen && ["launcher", "session", "dashboard"].includes(drawer))
+diff --git a/modules/launcher/Content.qml b/modules/launcher/Content.qml
+index f5058f04..80b32c9f 100644
+--- a/modules/launcher/Content.qml
++++ b/modules/launcher/Content.qml
+@@ -107,12 +107,31 @@ Item {
+             }
+         }
+ 
+-        Component.onCompleted: forceActiveFocus()
++        Component.onCompleted: {
++            forceActiveFocus();
++            presetConnections.applyPreset(); // content is created lazily on open
++        }
+ 
+         Connections {
++            id: presetConnections
++
++            function applyPreset(): void {
++                if (!root.screenState.launcher || root.screenState.launcherPreset === "")
++                    return;
++                search.text = root.screenState.launcherPreset;
++                search.cursorPosition = search.text.length;
++                root.screenState.launcherPreset = "";
++            }
++
+             function onLauncherChanged(): void {
+                 if (!root.screenState.launcher)
+                     search.text = "";
++                else
++                    presetConnections.applyPreset();
++            }
++
++            function onLauncherPresetChanged(): void {
++                presetConnections.applyPreset();
+             }
+ 
+             function onSessionChanged(): void {

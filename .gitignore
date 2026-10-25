@@ -1,0 +1,6 @@
+# original KoolDots copy: generated wallpapers + a prebuilt 17M binary
+hypr/wallpaper_effects/
+hypr/scripts/dots-tui-ubuntu-2404
+*.pre-*
+*.bak
+*.tmp

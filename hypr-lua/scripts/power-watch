@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Charger plugged/unplugged -> reload Hyprland (lua/power.lua drops blur/shadows/animations on
+# battery) and switch the power profile: power-saver on battery, back to the previous one on AC.
+# Started once from lua/autostart.lua (inherits HYPRLAND_INSTANCE_SIGNATURE).
+set -uo pipefail
+
+STATE=${XDG_STATE_HOME:-$HOME/.local/state}/power-watch-ac-profile
+PP=(--system --dest net.hadess.PowerProfiles --object-path /net/hadess/PowerProfiles)
+
+on_ac() {
+    local d
+    for d in /sys/class/power_supply/*; do
+        [[ $(<"$d/type") == Mains && $(<"$d/online") == 1 ]] && return 0
+    done
+    return 1
+}
+
+profile() { # profile [NAME]  (get / set)
+    if [[ -n ${1:-} ]]; then
+        gdbus call "${PP[@]}" --method org.freedesktop.DBus.Properties.Set \
+            net.hadess.PowerProfiles ActiveProfile "<'$1'>" >/dev/null
+    else
+        gdbus call "${PP[@]}" --method org.freedesktop.DBus.Properties.Get \
+            net.hadess.PowerProfiles ActiveProfile | sed -E "s/.*'(.*)'.*/\1/"
+    fi
+}
+
+to_saver() { # remember the AC profile, then go power-saver
+    local cur
+    cur=$(profile)
+    [[ $cur != power-saver ]] && echo "$cur" >"$STATE"
+    profile power-saver
+}
+
+apply() {
+    if on_ac; then
+        profile "$(cat "$STATE" 2>/dev/null || echo performance)"
+        notify-send -e -u low -i battery-full-charging "Charger connected" "Full effects, $(profile)"
+    else
+        to_saver
+        notify-send -e -u low -i battery-good "On battery" "No blur/shadows/animations, power-saver"
+    fi
+    hyprctl reload >/dev/null
+}
+
+last=$(on_ac && echo ac || echo bat)
+# booted on battery: lua/power.lua already trimmed effects, only the profile is left
+[[ $last == bat ]] && to_saver
+# power_supply events also fire on every capacity tick -> act only when AC state flips
+udevadm monitor --udev --subsystem-match=power_supply | while read -r _; do
+    now=$(on_ac && echo ac || echo bat)
+    [[ $now == "$last" ]] && continue
+    last=$now
+    sleep 0.5 # let the adapter settle
+    apply
+done

@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""Follow the caelestia colour scheme in KDE apps (Dolphin, Ark, Okular, Kate...).
+
+caelestia only themes qtengine apps; KDE apps outside Plasma read a named colour scheme
+(dolphinrc ColorScheme=) plus the [Colors:*] groups in kdeglobals. Renders caelestia's own
+KDE template (qt{mode}.colors) from ~/.local/state/caelestia/scheme.json into
+~/.local/share/color-schemes/Caelestia.colors, merges it into kdeglobals and pokes running apps.
+
+Run by caelestia-kde-colors.path on every scheme change.
+"""
+import configparser
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+HOME = Path.home()
+SCHEME = HOME / ".local/state/caelestia/scheme.json"
+OUT = HOME / ".local/share/color-schemes/Caelestia.colors"
+KDEGLOBALS = HOME / ".config/kdeglobals"
+DOLPHINRC = HOME / ".config/dolphinrc"
+TEMPLATES = HOME / ".local/share/uv/tools/caelestia/lib"
+
+
+def ini() -> configparser.RawConfigParser:
+    cfg = configparser.RawConfigParser(strict=False, interpolation=None, delimiters=("=",))
+    cfg.optionxform = str  # KDE keys are case-sensitive
+    return cfg
+
+
+def write_ini(cfg: configparser.RawConfigParser, path: Path) -> None:
+    tmp = path.with_suffix(".tmp")
+    with tmp.open("w") as f:
+        cfg.write(f, space_around_delimiters=False)
+    tmp.replace(path)
+
+
+def render(scheme: dict) -> str:
+    template = next(TEMPLATES.glob(f"python*/site-packages/caelestia/data/templates/qt{scheme['mode']}.colors"), None)
+    if template is None:
+        sys.exit(f"caelestia qt{scheme['mode']}.colors template not found under {TEMPLATES}")
+    text = template.read_text()
+    for name, colour in scheme["colours"].items():
+        text = text.replace(f"{{{{ ${name} }}}}", f"#{colour}")
+    return text + "\n[General]\nColorScheme=Caelestia\nName=Caelestia\n"
+
+
+def main() -> None:
+    try:
+        scheme = json.loads(SCHEME.read_text())
+    except (OSError, ValueError) as e:
+        sys.exit(f"cannot read {SCHEME}: {e}")
+
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(render(scheme))
+
+    colours = ini()
+    colours.read(OUT)
+    glob = ini()
+    glob.read(KDEGLOBALS)
+    for section in colours.sections():
+        if section.startswith(("Colors:", "ColorEffects:")) or section == "WM":
+            if glob.has_section(section):
+                glob.remove_section(section)
+            glob.add_section(section)
+            for key, val in colours.items(section):
+                glob.set(section, key, val)
+    if not glob.has_section("General"):
+        glob.add_section("General")
+    glob.set("General", "ColorScheme", "Caelestia")
+    write_ini(glob, KDEGLOBALS)
+
+    subprocess.run(["kwriteconfig6", "--file", str(DOLPHINRC), "--group", "UiSettings",
+                    "--key", "ColorScheme", str(OUT)], check=False)
+    # KDE apps reload the palette on this signal (what plasma-apply-colorscheme sends)
+    subprocess.run(["dbus-send", "--session", "--type=signal", "/KGlobalSettings",
+                    "org.kde.KGlobalSettings.notifyChange", "int32:0", "int32:0"], check=False)
+
+
+if __name__ == "__main__":
+    main()

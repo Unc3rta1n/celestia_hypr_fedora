@@ -1,0 +1,35 @@
+{
+    "theme": {
+        "enableTerm": true,
+        "enableHypr": true,
+        "enableFuzzel": true,
+        "enableGtk": false,
+        "enableQt": false,
+        "enableDiscord": false,
+        "enableSpicetify": false,
+        "enablePandora": false,
+        "enableBtop": false,
+        "enableNvtop": false,
+        "enableHtop": false,
+        "enableWarp": false,
+        "enableChromium": false,
+        "enableZed": false,
+        "enableCava": false
+    },
+    "toggles": {
+        "telegram": {
+            "telegram": {
+                "enable": true,
+                "match": [
+                    {
+                        "class": "org.telegram.desktop"
+                    }
+                ],
+                "command": [
+                    "Telegram"
+                ],
+                "move": true
+            }
+        }
+    }
+}

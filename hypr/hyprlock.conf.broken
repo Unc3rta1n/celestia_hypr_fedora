@@ -1,0 +1,48 @@
+general {
+    fractional_scaling = 2
+    immediate_render = true
+    ignore_empty_input = false
+    hide_cursor = true
+}
+
+background {
+    monitor = eDP-1
+    path = /tmp/hyprlock_eDP-1.png
+    blur_size = 7
+    blur_passes = 3
+    noise = 0.01
+    contrast = 0.9
+    brightness = 0.7
+    vibrancy = 0.1
+}
+
+background {
+    monitor = DP-1
+    path = /tmp/hyprlock_DP-1.png
+    blur_size = 7
+    blur_passes = 3
+    noise = 0.01
+    contrast = 0.9
+    brightness = 0.7
+    vibrancy = 0.1
+}
+
+background {
+    monitor = HDMI-A-1
+    path = /tmp/hyprlock_HDMI-A-1.png
+    blur_size = 7
+    blur_passes = 3
+    noise = 0.01
+    contrast = 0.9
+    brightness = 0.7
+    vibrancy = 0.1
+}
+
+# Время
+label {
+    monitor =
+    text = cmd[update:1000] echo "$(date +"%H:%M")"
+    color = rgba(255, 255, 255, 0.9)
+    font_size = 96
+    font_family = JetBrainsMono Nerd Font ExtraBold
+}

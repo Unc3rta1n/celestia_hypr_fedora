@@ -1,0 +1,19 @@
+diff --git a/modules/areapicker/Picker.qml b/modules/areapicker/Picker.qml
+index 0804cfba..68b49c39 100644
+--- a/modules/areapicker/Picker.qml
++++ b/modules/areapicker/Picker.qml
+@@ -84,8 +84,12 @@ MouseArea {
+         const tmpfile = Qt.resolvedUrl(`/tmp/caelestia-picker-${Quickshell.processId}-${Date.now()}.png`);
+         CUtils.saveItem(screencopy, tmpfile, Qt.rect(Math.ceil(rsx), Math.ceil(rsy), Math.floor(sw), Math.floor(sh)), path => {
+             if (root.loader.clipboardOnly) {
+-                Quickshell.execDetached(["sh", "-c", "wl-copy --type image/png < " + path]);
+-                Quickshell.execDetached(["notify-send", "-a", "caelestia-cli", "-i", path, Tr.tr("Screenshot taken"), Tr.tr("Screenshot copied to clipboard")]);
++                // Copy + keep a file in ~/Pictures/Screenshots; clicking the notification opens swappy
++                const script = 'f="$HOME/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"; mkdir -p "${f%/*}"; cp "$1" "$f"; '
++                    + 'wl-copy --type image/png < "$f"; '
++                    + 'a=$(notify-send -a caelestia-cli -i "$f" -A edit="$2" "$3" "$4"); '
++                    + '[ "$a" = edit ] && exec swappy -f "$f"';
++                Quickshell.execDetached(["sh", "-c", script, "sh", path, Tr.tr("Edit"), Tr.tr("Screenshot taken"), Tr.tr("Copied to clipboard. Click to edit")]);
+             } else {
+                 Quickshell.execDetached(["swappy", "-f", path]);
+             }

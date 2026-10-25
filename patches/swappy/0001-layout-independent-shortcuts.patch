@@ -1,0 +1,64 @@
+diff --git a/src/application.c b/src/application.c
+index 57d652f..81ea02d 100644
+--- a/src/application.c
++++ b/src/application.c
+@@ -338,6 +338,23 @@ void control_modifier_changed(bool pressed, struct swappy_state *state) {
+   }
+ }
+ 
++/* Non-latin layouts (e.g. ru): map the physical key to the keyval of the first
++ * layout so shortcuts like Ctrl+Z work regardless of the active layout. */
++static guint layout_independent_keyval(GdkEventKey *event) {
++  guint keyval = event->keyval;
++  if (gdk_keyval_to_unicode(keyval) <= 0x7f) {
++    return keyval;
++  }
++  GdkKeymap *keymap = gdk_keymap_get_for_display(gdk_display_get_default());
++  guint translated;
++  if (gdk_keymap_translate_keyboard_state(keymap, event->hardware_keycode,
++                                          event->state, 0, &translated, NULL,
++                                          NULL, NULL)) {
++    return translated;
++  }
++  return keyval;
++}
++
+ void window_keypress_handler(GtkWidget *widget, GdkEventKey *event,
+                              struct swappy_state *state) {
+   if (state->temp_paint && state->mode == SWAPPY_PAINT_MODE_TEXT) {
+@@ -346,7 +363,7 @@ void window_keypress_handler(GtkWidget *widget, GdkEventKey *event,
+     return;
+   }
+   if (event->state & GDK_CONTROL_MASK) {
+-    switch (event->keyval) {
++    switch (layout_independent_keyval(event)) {
+       case GDK_KEY_c:
+         clipboard_copy_drawing_area_to_selection(state);
+         break;
+@@ -370,7 +387,7 @@ void window_keypress_handler(GtkWidget *widget, GdkEventKey *event,
+         break;
+     }
+   } else {
+-    switch (event->keyval) {
++    switch (layout_independent_keyval(event)) {
+       case GDK_KEY_Escape:
+       case GDK_KEY_q:
+         maybe_save_output_file(state);
+@@ -446,7 +463,7 @@ void window_keypress_handler(GtkWidget *widget, GdkEventKey *event,
+ void window_keyrelease_handler(GtkWidget *widget, GdkEventKey *event,
+                                struct swappy_state *state) {
+   if (event->state & GDK_CONTROL_MASK) {
+-    switch (event->keyval) {
++    switch (layout_independent_keyval(event)) {
+       case GDK_KEY_Control_L:
+         control_modifier_changed(false, state);
+         break;
+@@ -454,7 +471,7 @@ void window_keyrelease_handler(GtkWidget *widget, GdkEventKey *event,
+         break;
+     }
+   } else {
+-    switch (event->keyval) {
++    switch (layout_independent_keyval(event)) {
+       default:
+         break;
+     }

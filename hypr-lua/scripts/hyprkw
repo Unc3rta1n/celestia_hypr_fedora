@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# hyprkw KEY VALUE... — drop-in for `hyprctl keyword KEY VALUE` under the Lua config.
+#   hyprkw decoration:blur:passes 2        -> hl.config({ decoration = { blur = { passes = 2 } } })
+#   hyprkw general:col.active_border "rgb(..) rgb(..) 45deg"
+#   hyprkw "device[name]:enabled" true     -> hl.device({ name = "name", enabled = true })
+# Trailing hyprctl flags (-r) are ignored.
+set -euo pipefail
+
+key=${1:?usage: hyprkw KEY VALUE}
+shift
+args=()
+for a in "$@"; do [[ $a == -r ]] || args+=("$a"); done
+value="${args[*]-}"
+
+lua_value() {
+    local v=$1
+    if [[ $v =~ ^-?[0-9]+(\.[0-9]+)?$ || $v == true || $v == false ]]; then
+        printf '%s' "$v"
+    elif [[ $v == yes || $v == on ]]; then
+        printf 'true'
+    elif [[ $v == no || $v == off ]]; then
+        printf 'false'
+    else
+        printf '[==[%s]==]' "$v"
+    fi
+}
+
+if [[ $key =~ ^device\[([^]]+)\]:(.+)$ ]]; then
+    lua="hl.device({ name = [==[${BASH_REMATCH[1]}]==], ${BASH_REMATCH[2]} = $(lua_value "$value") })"
+else
+    IFS=':.' read -r -a parts <<<"$key"
+    lua="$(lua_value "$value")"
+    for ((i = ${#parts[@]} - 1; i >= 0; i--)); do
+        lua="{ ${parts[i]} = $lua }"
+    done
+    lua="hl.config($lua)"
+fi
+
+[[ -n ${HYPR_DRY:-} ]] && { echo "$lua"; exit 0; }
+exec hyprctl eval "$lua"

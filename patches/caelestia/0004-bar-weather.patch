@@ -1,0 +1,68 @@
+diff --git a/modules/bar/Bar.qml b/modules/bar/Bar.qml
+index 3399f1dd..7d35fe85 100644
+--- a/modules/bar/Bar.qml
++++ b/modules/bar/Bar.qml
+@@ -163,6 +163,14 @@ ColumnLayout {
+                     }
+                 }
+             }
++            DelegateChoice {
++                roleValue: "weather"
++                delegate: EntryWrapper {
++                    WeatherEntry {
++                        objectName: "taskbarWeather"
++                    }
++                }
++            }
+             DelegateChoice {
+                 roleValue: "statusIcons"
+                 delegate: EntryWrapper {
+diff --git a/modules/bar/components/WeatherEntry.qml b/modules/bar/components/WeatherEntry.qml
+new file mode 100644
+index 00000000..c2e2a151
+--- /dev/null
++++ b/modules/bar/components/WeatherEntry.qml
+@@ -0,0 +1,43 @@
++pragma ComponentBehavior: Bound
++
++import QtQuick
++import QtQuick.Layouts
++import Caelestia.Config
++import qs.components
++import qs.services
++
++// Bar entry "weather": condition icon + current temperature (services.weatherLocation / weatherUnits)
++StyledRect {
++    id: root
++
++    readonly property color colour: Colours.palette.m3secondary
++    readonly property int padding: Config.bar.clock.background ? Tokens.padding.medium : Tokens.padding.extraSmall
++
++    implicitWidth: Tokens.sizes.bar.innerWidth
++    implicitHeight: layout.implicitHeight + root.padding * 2
++
++    color: Qt.alpha(Colours.tPalette.m3surfaceContainer, Config.bar.clock.background ? Colours.tPalette.m3surfaceContainer.a : 0)
++    radius: Tokens.rounding.full
++
++    Component.onCompleted: Weather.reload()
++
++    ColumnLayout {
++        id: layout
++
++        anchors.centerIn: parent
++        spacing: Tokens.spacing.extraSmall
++
++        MaterialIcon {
++            Layout.alignment: Qt.AlignHCenter
++            text: Weather.icon
++            color: root.colour
++        }
++
++        StyledText {
++            Layout.alignment: Qt.AlignHCenter
++            text: Weather.formatTemp(Weather.cc?.tempC, true)
++            font: Tokens.font.body.builders.small.scale(1.05).build()
++            color: root.colour
++        }
++    }
++}

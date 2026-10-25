@@ -1,0 +1,27 @@
+diff --git a/modules/notifications/Notification.qml b/modules/notifications/Notification.qml
+index 118cdbe2..6bbf654b 100644
+--- a/modules/notifications/Notification.qml
++++ b/modules/notifications/Notification.qml
+@@ -84,9 +84,21 @@ StyledRect {
+             if (!GlobalConfig.notifs.actionOnClick || event.button !== Qt.LeftButton)
+                 return;
+ 
++            // Prefer the spec's "default" action (Telegram & co. send it alongside e.g. "Mark as read")
+             const actions = root.modelData.actions;
+-            if (actions.length === 1)
++            const defaultAction = actions.find(a => a.identifier === "default");
++            const desktopEntry = root.modelData.notification?.desktopEntry ?? "";
++            if (defaultAction)
++                defaultAction.invoke();
++            else if (actions.length === 1)
+                 actions[0].invoke();
++            else
++                return;
++
++            // Apps' own activation requests are ignored (misc.focus_on_activate = false, so new messages
++            // don't steal focus). On an explicit click, focus the sender's window ourselves.
++            if (desktopEntry)
++                Quickshell.execDetached(["hyprctl", "dispatch", `hl.dsp.focus({ window = "class:^(${desktopEntry})$" })`]);
+         }
+ 
+         Item {

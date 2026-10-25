@@ -1,0 +1,8 @@
+[Unit]
+Description=Recolour KDE apps when the caelestia scheme changes
+
+[Path]
+PathChanged=%h/.local/state/caelestia/scheme.json
+
+[Install]
+WantedBy=default.target

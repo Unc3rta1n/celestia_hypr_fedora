@@ -1,0 +1,54 @@
+diff --git a/modules/lock/center/StateMessage.qml b/modules/lock/center/StateMessage.qml
+index 6be3b408..7eb448b5 100644
+--- a/modules/lock/center/StateMessage.qml
++++ b/modules/lock/center/StateMessage.qml
+@@ -68,29 +68,15 @@ Item {
+         return "";
+     }
+ 
++    // Always show the active layout (upstream only showed it when it differed from the default)
+     readonly property string stateMsg: {
+-        if (Hypr.kbLayout !== Hypr.defaultKbLayout) {
+-            if (Hypr.capsLock && Hypr.numLock)
+-                // TRANSLATORS: %1 = the active keyboard layout name, e.g. "English (US)"
+-                return Tr.tr("Caps lock and Num lock are ON.\nKeyboard layout: %1").arg(Hypr.kbLayoutFull);
+-            if (Hypr.capsLock)
+-                // TRANSLATORS: %1 = the active keyboard layout name, e.g. "English (US)"
+-                return Tr.tr("Caps lock is ON. Keyboard layout: %1").arg(Hypr.kbLayoutFull);
+-            if (Hypr.numLock)
+-                // TRANSLATORS: %1 = the active keyboard layout name, e.g. "English (US)"
+-                return Tr.tr("Num lock is ON. Keyboard layout: %1").arg(Hypr.kbLayoutFull);
+-            // TRANSLATORS: %1 = the active keyboard layout name, e.g. "English (US)"
+-            return Tr.tr("Keyboard layout: %1").arg(Hypr.kbLayoutFull);
+-        }
+-
++        // TRANSLATORS: %1 = the active keyboard layout name, e.g. "English (US)"
++        const layout = Tr.tr("Keyboard layout: %1").arg(Hypr.kbLayoutFull);
+         if (Hypr.capsLock && Hypr.numLock)
+-            return Tr.tr("Caps lock and Num lock are ON.");
++            return Tr.tr("Caps lock and Num lock are ON.") + "\n" + layout;
+         if (Hypr.capsLock)
+-            return Tr.tr("Caps lock is ON.");
+-        if (Hypr.numLock)
+-            return Tr.tr("Num lock is ON.");
+-
+-        return "";
++            return Tr.tr("Caps lock is ON.") + "\n" + layout;
++        return layout;
+     }
+ 
+     property bool stateMsgShouldBeVisible
+@@ -119,7 +105,12 @@ Item {
+         }
+     }
+ 
+-    onStateMsgChanged: {
++    // Also apply on creation: onStateMsgChanged doesn't fire for the initial value,
++    // so the layout line stayed hidden until something changed.
++    Component.onCompleted: applyStateMsg()
++    onStateMsgChanged: applyStateMsg()
++
++    function applyStateMsg(): void {
+         if (stateMsg) {
+             if (stateMessage.opacity > 0) {
+                 stateMessage.animate = true;

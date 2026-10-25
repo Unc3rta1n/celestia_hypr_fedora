@@ -1,0 +1,6 @@
+[Unit]
+Description=Render caelestia scheme into KDE colour scheme + kdeglobals
+
+[Service]
+Type=oneshot
+ExecStart=%h/.config/hypr/scripts/caelestia-kde-colors
