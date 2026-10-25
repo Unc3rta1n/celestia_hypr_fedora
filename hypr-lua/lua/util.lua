@@ -15,7 +15,7 @@ function M.notify(title, body)
 end
 
 -- Usable area of a monitor in logical px: rotation, scale and reserved space (caelestia bar) applied
-local function work_area(mon)
+function M.work_area(mon)
     local w, h = mon.width / mon.scale, mon.height / mon.scale
     if (mon.transform or 0) % 2 == 1 then w, h = h, w end
     local r = mon.reserved
@@ -37,7 +37,7 @@ function M.toggle_float()
 
     local mon = win.monitor or hl.get_active_monitor()
     if not mon then return end
-    local aw, ah = work_area(mon)
+    local aw, ah = M.work_area(mon)
     local cur = hl.get_active_window()
     local sw = cur and cur.size and (cur.size[1] or cur.size.x) or aw
     local sh = cur and cur.size and (cur.size[2] or cur.size.y) or ah

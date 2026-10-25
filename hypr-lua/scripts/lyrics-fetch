@@ -7,7 +7,7 @@ set -uo pipefail
 
 DIR=${LYRICS_DIR:-$HOME/Music/Lyrics}
 MISS=${XDG_CACHE_HOME:-$HOME/.cache}/lyrics-fetch.miss # tracks nothing was found for: don't retry
-PROVIDERS=(Musixmatch Lrclib NetEase)
+PROVIDERS=(musixmatch lrclib netease)
 mkdir -p "$DIR" "$(dirname "$MISS")"
 touch "$MISS"
 
