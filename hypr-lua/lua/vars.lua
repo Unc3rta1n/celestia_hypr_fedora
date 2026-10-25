@@ -21,7 +21,7 @@ local M = {
     caelestia        = "env -u QT_QUICK_CONTROLS_STYLE -u QT_STYLE_OVERRIDE caelestia shell -d",
     caelestiaRestart = "qs -c caelestia kill; sleep .2; env -u QT_QUICK_CONTROLS_STYLE -u QT_STYLE_OVERRIDE caelestia shell -d",
 
-    touchpadDevice = "asue1209:00-04f3:319f-touchpad",
+    touchpadDevice = "syn1b8b:00-06cb:ce7d-touchpad",
 }
 
 return M
