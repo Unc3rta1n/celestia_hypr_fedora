@@ -35,6 +35,7 @@ Then log out/in. Rollback to the hyprlang config: `./deploy-lua.sh --rollback`.
 6. notification click: default action + focus the sender's window
 7. area picker OCR mode (`caelestia:ocr`, tesseract rus+eng -> clipboard)
 8. bar: recording indicator (REC, timer, pause, stop) + `recorder toggle|pause` IPC
+9. nerd-font glyphs in `bar.workspaces.windowIcons` (window icons migrated from waybar window-rewrite)
 
 ## Keys
 

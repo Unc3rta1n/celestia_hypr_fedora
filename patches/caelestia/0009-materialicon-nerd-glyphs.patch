@@ -1,0 +1,18 @@
+diff --git a/components/MaterialIcon.qml b/components/MaterialIcon.qml
+index 513244ad..0a07ba09 100644
+--- a/components/MaterialIcon.qml
++++ b/components/MaterialIcon.qml
+@@ -6,6 +6,12 @@ StyledText {
+     property real fill
+     property int grade: Colours.light ? 0 : -25
+     property font fontStyle: Tokens.font.icon.small
++    // A raw glyph (e.g. nerd-font icons in bar.workspaces.windowIcons) instead of a Material ligature
++    // name: Material Symbols puts its own icons in the same private-use range, so draw it with a nerd font
++    readonly property bool isGlyph: text.length > 0 && text.length <= 2 && text.codePointAt(0) >= 0xe000
+ 
+-    font: Tokens.font.icon.size(fontStyle.pointSize).weight(fontStyle.weight).vaxes(fontStyle.variableAxes).fill(fill.toFixed(1)).grade(grade).build()
++    font: isGlyph ? Qt.font({
++        family: "JetBrainsMono Nerd Font Propo",
++        pointSize: fontStyle.pointSize
++    }) : Tokens.font.icon.size(fontStyle.pointSize).weight(fontStyle.weight).vaxes(fontStyle.variableAxes).fill(fill.toFixed(1)).grade(grade).build()
+ }
