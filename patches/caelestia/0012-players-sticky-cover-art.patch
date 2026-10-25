@@ -1,0 +1,31 @@
+diff --git a/services/Players.qml b/services/Players.qml
+index 020d6579..80bca26e 100644
+--- a/services/Players.qml
++++ b/services/Players.qml
+@@ -26,11 +26,25 @@ Singleton {
+         return alias?.to ?? player.identity;
+     }
+ 
++    // Some web players (Yandex Music in Firefox) flip the metadata back to the page title between
++    // tracks and resend the track without art; Firefox only sends the cover once. Remember it per track,
++    // and per player for the in-between updates, so the cover doesn't blink away.
++    property var artByTrack: ({})
++    property var lastArtByPlayer: ({})
++
+     function getArtUrl(player: MprisPlayer): string {
+         if (!player)
+             return "";
+-        if (player.trackArtUrl)
++        const trackKey = `${player.identity}|${player.trackArtist}|${player.trackTitle}`;
++        if (player.trackArtUrl) {
++            artByTrack[trackKey] = player.trackArtUrl;
++            lastArtByPlayer[player.identity] = player.trackArtUrl;
+             return player.trackArtUrl;
++        }
++        if (artByTrack[trackKey])
++            return artByTrack[trackKey];
++        if (!player.trackArtist && lastArtByPlayer[player.identity])
++            return lastArtByPlayer[player.identity]; // in-between "page title" update
+ 
+         const url = player.metadata["xesam:url"] ?? "";
+         if (url.startsWith("https://www.youtube.com/watch")) {
