@@ -40,7 +40,8 @@ q=$HOME/.config/qt6ct/qt6ct.conf
 
 step "cursor: gruvbox-light 28 everywhere (XCursor rebuilt from hyprcursor for XWayland/GTK/Electron)"
 for t in "$HOME"/.icons/gruvbox-light "$HOME"/.icons/gruvbox-dark; do
-    [[ -d $t/hyprcursors && ! -d $t/cursors ]] && python3 "$HERE"/hyprcursor2xcursor.py "$t"
+    # 28 = XCURSOR_SIZE: without an exact size GTK/XWayland apps fall back to the 24px cursor
+    [[ -d $t/hyprcursors ]] && python3 "$HERE"/hyprcursor2xcursor.py "$t" 28
 done
 mkdir -p "$HOME/.icons/default"
 printf '[Icon Theme]\nInherits=gruvbox-light\n' >"$HOME/.icons/default/index.theme"

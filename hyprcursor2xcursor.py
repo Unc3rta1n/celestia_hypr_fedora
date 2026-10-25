@@ -4,7 +4,9 @@
 Apps that don't speak cursor-shape-v1 (XWayland, Electron, some GTK/Qt widgets) fall back to
 XCursor and showed the default GTK cursor because the theme only had hyprcursors.
 
-usage: hyprcursor2xcursor.py ~/.icons/gruvbox-light
+usage: hyprcursor2xcursor.py ~/.icons/gruvbox-light [extra sizes, e.g. 28]
+Extra sizes are downscaled from the next bigger one: XCursor apps (GTK, LibreOffice, XWayland) pick the
+nearest *existing* size, so without them XCURSOR_SIZE=28 shows the 24px cursor while Hyprland draws 28.
 """
 import io
 import re
@@ -53,7 +55,25 @@ def build_xcursor(frames) -> bytes:
     return b"Xcur" + struct.pack("<3I", header_len, 0x10000, len(frames)) + toc + chunks
 
 
-def main(theme_dir: Path) -> None:
+def add_sizes(frames, extra):
+    """frames: [(size, img, xh, yh, delay)] -> plus downscaled copies for missing extra sizes"""
+    have = {f[0] for f in frames}
+    out = list(frames)
+    for size in extra:
+        if size in have:
+            continue
+        bigger = sorted((f for f in frames if f[0] > size), key=lambda f: f[0])
+        if not bigger:
+            continue
+        src = [f for f in frames if f[0] == bigger[0][0]]  # all animation frames of that size
+        for nominal, img, xh, yh, delay in src:
+            k = size / nominal
+            w, h = max(1, round(img.width * k)), max(1, round(img.height * k))
+            out.append((size, img.resize((w, h), Image.LANCZOS), round(xh * k), round(yh * k), delay))
+    return sorted(out, key=lambda f: f[0])
+
+
+def main(theme_dir: Path, extra: list[int]) -> None:
     src, dst = theme_dir / "hyprcursors", theme_dir / "cursors"
     dst.mkdir(exist_ok=True)
     made = links = 0
@@ -66,7 +86,7 @@ def main(theme_dir: Path) -> None:
                 img = Image.open(io.BytesIO(z.read(png)))
                 w, h = img.size
                 frames.append((size, img, round(hot_x * (w - 1)), round(hot_y * (h - 1)), delay))
-        (dst / name).write_bytes(build_xcursor(frames))
+        (dst / name).write_bytes(build_xcursor(add_sizes(frames, extra)))
         made += 1
         for alias in overrides:
             link = dst / alias
@@ -80,4 +100,4 @@ def main(theme_dir: Path) -> None:
 
 
 if __name__ == "__main__":
-    main(Path(sys.argv[1]).expanduser())
+    main(Path(sys.argv[1]).expanduser(), [int(a) for a in sys.argv[2:]])
