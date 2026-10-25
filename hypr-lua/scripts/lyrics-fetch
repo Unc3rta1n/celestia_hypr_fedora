@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Background lyrics fetcher: on every track change, if ~/Music/Lyrics has no "<Artist> - <Title>.lrc"
+# (the name caelestia's local backend looks for), fetch synced lyrics with syncedlyrics
+# (Musixmatch first, then LRCLIB / NetEase) and tell the shell to reload (patches/0009).
+# Started once from lua/autostart.lua. Needs: uv tool install syncedlyrics
+set -uo pipefail
+
+DIR=${LYRICS_DIR:-$HOME/Music/Lyrics}
+MISS=${XDG_CACHE_HOME:-$HOME/.cache}/lyrics-fetch.miss # tracks nothing was found for: don't retry
+PROVIDERS=(Musixmatch Lrclib NetEase)
+mkdir -p "$DIR" "$(dirname "$MISS")"
+touch "$MISS"
+
+command -v syncedlyrics >/dev/null || { echo "syncedlyrics not installed" >&2; exit 1; }
+
+fetch() { # artist title
+    local artist=$1 title=$2 key file tmp
+    key="$artist - $title"
+    file="$DIR/${artist//\//_} - ${title//\//_}.lrc"
+    [[ -s $file ]] && return
+    grep -qxF "$key" "$MISS" && return
+
+    tmp=$(mktemp --suffix=.lrc)
+    if timeout 30 syncedlyrics "$artist $title" -p "${PROVIDERS[@]}" --synced-only -o "$tmp" >/dev/null 2>&1 &&
+        grep -qE '^\[[0-9]+:[0-9]+' "$tmp"; then
+        mv "$tmp" "$file"
+        qs -c caelestia ipc call lyrics refresh >/dev/null 2>&1
+    else
+        rm -f "$tmp"
+        echo "$key" >>"$MISS"
+    fi
+}
+
+last=""
+playerctl -a --follow metadata --format $'{{artist}}\t{{title}}' 2>/dev/null |
+    while IFS=$'\t' read -r artist title; do
+        [[ -n $artist && -n $title && "$artist$title" != "$last" ]] || continue
+        last="$artist$title"
+        fetch "$artist" "$title" &
+    done

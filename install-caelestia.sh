@@ -97,6 +97,8 @@ sudo cmake --install "$BUILD/shell/build"
 
 step "caelestia-cli @ ${CLI_REV:0:8} (uv tool)"
 uv tool install --force --python 3.14 "git+https://github.com/caelestia-dots/cli@${CLI_REV}"
+# lyrics for the media panel (hypr-lua/scripts/lyrics-fetch): Musixmatch, LRCLIB, NetEase...
+uv tool install --force syncedlyrics
 
 step "swappy (patched: shortcuts work on non-latin layouts) -> ~/.local/bin"
 if ! done_or swappy; then
