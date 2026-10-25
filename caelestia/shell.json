@@ -149,5 +149,34 @@
   },
   "lock": {
     "hideNotifs": true
+  },
+  "utilities": {
+    "vpn": {
+      "enabled": true,
+      "selectedProvider": "vpn-office",
+      "provider": [
+        {
+          "id": "vpn-office",
+          "name": "wg0",
+          "displayName": "Офис (wg0)",
+          "interface": "wg0",
+          "connectCmd": [
+            "nmcli",
+            "connection",
+            "up",
+            "wg0"
+          ],
+          "disconnectCmd": [
+            "nmcli",
+            "connection",
+            "down",
+            "wg0"
+          ]
+        }
+      ]
+    },
+    "toasts": {
+      "vpnChanged": true
+    }
   }
 }

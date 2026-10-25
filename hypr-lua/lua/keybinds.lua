@@ -294,4 +294,6 @@ bind(M("SHIFT + code:42"), shell("gameMode toggle"), "toggle game mode")        
 bind(M("SHIFT + code:32"), exec(S .. "/menus.sh zsh-theme"), "change oh-my-zsh theme")             -- O
 bind(M("SHIFT + code:38"), exec(S .. "/menus.sh animations"), "animations menu")                   -- A
 bind(M("code:57"), exec(S .. "/Hyprsunset.sh toggle"), "toggle night light")                     -- N
+-- office WireGuard (NetworkManager "wg0", was waybar custom/vpn); caelestia toasts the state change
+bind(M("SHIFT + code:25"), exec([[sh -c 'if nmcli -t -f NAME connection show --active | grep -qx wg0; then nmcli connection down wg0; else nmcli connection up wg0 || notify-send -u critical "VPN" "wg0 не поднялся"; fi']]), "office VPN wg0 on/off") -- W
 bind(M("code:43"), exec(S .. "/menus.sh keys"), "help / cheat sheet (all binds)")                 -- H
