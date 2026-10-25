@@ -3,7 +3,7 @@
         "enableTerm": true,
         "enableHypr": true,
         "enableFuzzel": true,
-        "enableGtk": false,
+        "enableGtk": true,
         "enableQt": false,
         "enableDiscord": false,
         "enableSpicetify": false,
@@ -14,6 +14,7 @@
         "enableWarp": false,
         "enableChromium": false,
         "enableZed": false,
-        "enableCava": false
+        "enableCava": false,
+        "iconTheme": "Flat-Remix-Blue-Dark"
     }
 }
