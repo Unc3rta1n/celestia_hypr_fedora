@@ -201,8 +201,8 @@ bind("ALT + Print", exec(S .. "/ScreenShot.sh --active"), "screenshot active win
 bind(M("SHIFT + code:28"), global("ocr"), "OCR area -> clipboard (text)")                          -- T
 -- Screen recording via the shell (patches/0008: keeps the bar indicator's timer/pause in sync);
 -- same key again stops; saved to ~/Videos/Recordings, path copied (paste = attach file)
-bind(M("SHIFT + code:27"), shell("recorder toggle '-c -r'"), "record area (again = stop)")         -- R
-bind(M("CTRL + code:27"), shell("recorder toggle '-c -s'"), "record monitor + sound (again = stop)") -- R
+bind(M("SHIFT + code:27"), shell("recorder toggle area"), "record area (again = stop)")         -- R
+bind(M("CTRL + code:27"), shell("recorder toggle monitorSound"), "record monitor + sound (again = stop)") -- R
 bind(M("CTRL + SHIFT + code:27"), shell("recorder pause"), "pause/resume recording")              -- R
 
 ---------------------------------------------------------------- WINDOWS

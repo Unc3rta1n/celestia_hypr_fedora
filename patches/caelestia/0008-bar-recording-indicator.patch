@@ -116,20 +116,21 @@ index 00000000..0e8d949a
 +    }
 +}
 diff --git a/services/Recorder.qml b/services/Recorder.qml
-index 4246cb8e..8d1d2d6a 100644
+index 4246cb8e..3c54ca45 100644
 --- a/services/Recorder.qml
 +++ b/services/Recorder.qml
-@@ -33,6 +33,23 @@ Singleton {
+@@ -33,6 +33,24 @@ Singleton {
          checkProc.running = true;
      }
  
 +    // keybinds go through the shell so its state (elapsed time, paused) stays right:
-+    //   qs -c caelestia ipc call recorder toggle "-r -c"   start with these `caelestia record` args, or stop
++    //   qs -c caelestia ipc call recorder toggle area|monitor|areaSound|monitorSound   (start, or stop if running)
++    // the saved file's path is copied to the clipboard (paste = attach the video)
 +    IpcHandler {
-+        function toggle(args: string): void {
++        function toggle(mode: string): void {
 +            root.needsStop = true;
 +            root.needsStart = true;
-+            root.startArgs = args.split(" ").filter(a => a);
++            root.startArgs = ["-c", ...(mode.startsWith("area") ? ["-r"] : []), ...(mode.endsWith("Sound") ? ["-s"] : [])];
 +            checkProc.running = true;
 +        }
 +
