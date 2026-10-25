@@ -27,8 +27,6 @@ hl.on("hyprland.start", function()
     hl.exec_cmd(v.scriptsDir .. "/Hyprsunset.sh init")
     -- charger plug/unplug -> battery saver (lua/power.lua) + power profile
     hl.exec_cmd(v.scriptsDir .. "/power-watch")
-    -- synced lyrics from Musixmatch & co. into ~/Music/Lyrics for the media panel
-    hl.exec_cmd(v.scriptsDir .. "/lyrics-fetch")
 
     -- Clipboard history (caelestia clipboard reads cliphist)
     hl.exec_cmd("wl-paste --type text --watch cliphist store")
