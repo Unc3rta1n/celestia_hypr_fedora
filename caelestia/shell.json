@@ -137,7 +137,12 @@
         "id": "power",
         "enabled": true
       }
-    ]
+    ],
+    "tray": {
+      "hiddenIcons": [
+        "nm-applet"
+      ]
+    }
   },
   "notifs": {
     "actionOnClick": true
