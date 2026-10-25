@@ -84,7 +84,7 @@ bind(M("ALT + code:32"), function()                                             
 end, "toggle blur")
 bind(M("SHIFT + code:41"), shell("gameMode toggle"), "toggle game mode")            -- G
 bind(M("ALT + code:46"), function() kool_layout("toggle") end, "toggle layouts")    -- L
-bind(M("ALT + code:55"), exec(S .. "/clipboard.sh"), "clipboard manager (bottom, image previews)") -- V
+bind(M("code:55"), exec(S .. "/clipboard.sh"), "clipboard manager (bottom, image previews)") -- V (was Super+Alt+V)
 bind(M("CTRL + code:45"), launcher_with(">scheme "), "colour scheme (caelestia; recolours ghostty too)") -- K
 section("Capture")
 -- caelestia area picker: per-monitor capture (slurp/grim -g broke across the rotated monitor), click snaps to a window
