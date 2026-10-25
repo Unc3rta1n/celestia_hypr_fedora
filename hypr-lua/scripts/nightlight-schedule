@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""Night light by the sun: Hyprsunset.sh on at sunset, off at sunrise (Chelyabinsk by default).
+
+Acts only at the transitions (and once at start), so a manual Super+N toggle holds until the
+next sunrise/sunset. Sleeps in short chunks so suspend/hibernate can't make it miss one.
+
+usage: nightlight-schedule [LAT LON]      (started from lua/autostart.lua)
+       nightlight-schedule --times        print today's sunrise/sunset and exit
+"""
+import math
+import os
+import subprocess
+import sys
+import time
+from datetime import datetime, timedelta, timezone
+
+LAT, LON = 55.1644, 61.4368  # same spot as the bar weather
+SCRIPT = os.path.expanduser("~/.config/hypr/scripts/Hyprsunset.sh")
+STATE = os.path.expanduser("~/.cache/.hyprsunset_state")
+CHUNK = 300  # s
+
+
+def sun_times(day: datetime, lat: float, lon: float) -> tuple[datetime, datetime]:
+    """Sunrise/sunset (UTC) via the standard sunrise equation, ~1 min accuracy."""
+    rad, deg = math.radians, math.degrees
+    noon = datetime(day.year, day.month, day.day, 12, tzinfo=timezone.utc)
+    jdate = noon.timestamp() / 86400 + 2440587.5
+    n = math.ceil(jdate - 2451545.0 + 0.0008)
+    jstar = n - lon / 360
+    m = (357.5291 + 0.98560028 * jstar) % 360
+    c = 1.9148 * math.sin(rad(m)) + 0.02 * math.sin(rad(2 * m)) + 0.0003 * math.sin(rad(3 * m))
+    lam = (m + c + 180 + 102.9372) % 360
+    jtransit = 2451545.0 + jstar + 0.0053 * math.sin(rad(m)) - 0.0069 * math.sin(rad(2 * lam))
+    decl = math.asin(math.sin(rad(lam)) * math.sin(rad(23.4397)))
+    cos_w = (math.sin(rad(-0.833)) - math.sin(rad(lat)) * math.sin(decl)) / (math.cos(rad(lat)) * math.cos(decl))
+    w = deg(math.acos(max(-1.0, min(1.0, cos_w))))  # clamp: polar day/night
+    to_dt = lambda j: datetime.fromtimestamp((j - 2440587.5) * 86400, timezone.utc)
+    return to_dt(jtransit - w / 360), to_dt(jtransit + w / 360)
+
+
+def is_night(now: datetime, lat: float, lon: float) -> bool:
+    rise, set_ = sun_times(now, lat, lon)
+    return not (rise <= now < set_)
+
+
+def current() -> str:
+    try:
+        return open(STATE).read().strip()
+    except OSError:
+        return "off"
+
+
+def apply(night: bool) -> None:
+    want = "on" if night else "off"
+    if current() != want:
+        subprocess.run([SCRIPT, "toggle"], check=False)
+
+
+def main() -> int:
+    args = sys.argv[1:]
+    if args and args[0] == "--times":
+        rise, set_ = sun_times(datetime.now(timezone.utc), LAT, LON)
+        print(f"sunrise {rise.astimezone():%H:%M}  sunset {set_.astimezone():%H:%M}")
+        return 0
+    lat, lon = (float(args[0]), float(args[1])) if len(args) >= 2 else (LAT, LON)
+
+    night = is_night(datetime.now(timezone.utc), lat, lon)
+    apply(night)
+    while True:
+        time.sleep(CHUNK)
+        now_night = is_night(datetime.now(timezone.utc), lat, lon)
+        if now_night != night:  # a sunrise/sunset passed since the last check
+            night = now_night
+            apply(night)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

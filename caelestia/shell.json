@@ -102,6 +102,10 @@
         "enabled": true
       },
       {
+        "id": "media",
+        "enabled": true
+      },
+      {
         "id": "spacer",
         "enabled": true
       },

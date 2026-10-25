@@ -24,11 +24,16 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("blueman-applet")
 
     -- idle/lock: caelestia (general.idle in ~/.config/caelestia/shell.json) replaces hypridle + hyprlock
-    hl.exec_cmd(v.scriptsDir .. "/Hyprsunset.sh init")
+    -- night light follows the sun (Hyprsunset.sh on at sunset / off at sunrise; Super+N still overrides)
+    hl.exec_cmd(v.scriptsDir .. "/nightlight-schedule")
     -- charger plug/unplug -> battery saver (lua/power.lua) + power profile
     hl.exec_cmd(v.scriptsDir .. "/power-watch")
 
     -- Clipboard history (caelestia clipboard reads cliphist)
     hl.exec_cmd("wl-paste --type text --watch cliphist store")
     hl.exec_cmd("wl-paste --type image --watch cliphist store")
+    -- keep the clipboard alive after the app that copied it closes
+    hl.exec_cmd("command -v wl-clip-persist >/dev/null && wl-clip-persist --clipboard regular || ~/.cargo/bin/wl-clip-persist --clipboard regular")
+    -- automount USB drives with a notification (no tray icon)
+    hl.exec_cmd("command -v udiskie >/dev/null && udiskie --automount --notify --no-tray")
 end)

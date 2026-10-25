@@ -1,0 +1,108 @@
+diff --git a/modules/bar/Bar.qml b/modules/bar/Bar.qml
+index ac068ef1..911948b9 100644
+--- a/modules/bar/Bar.qml
++++ b/modules/bar/Bar.qml
+@@ -171,6 +171,15 @@ ColumnLayout {
+                     }
+                 }
+             }
++            DelegateChoice {
++                roleValue: "media"
++                delegate: EntryWrapper {
++                    // only takes space while some player is around
++                    visible: Players.active !== null
++
++                    MediaEntry {}
++                }
++            }
+             DelegateChoice {
+                 roleValue: "recording"
+                 delegate: EntryWrapper {
+diff --git a/modules/bar/components/MediaEntry.qml b/modules/bar/components/MediaEntry.qml
+new file mode 100644
+index 00000000..faca0ac1
+--- /dev/null
++++ b/modules/bar/components/MediaEntry.qml
+@@ -0,0 +1,82 @@
++pragma ComponentBehavior: Bound
++
++import QtQuick
++import Caelestia.Config
++import qs.components
++import qs.services
++
++// Bar entry "media" (was waybar mpris): play/pause button + vertical "Artist – Title".
++// Click the icon: play/pause; wheel over it: next/previous track. Hidden by Bar.qml without a player.
++Item {
++    id: root
++
++    readonly property var player: Players.active
++    readonly property int maxLength: 160
++    readonly property string label: {
++        const t = player?.trackTitle ?? "";
++        const a = player?.trackArtist ?? "";
++        return a && t ? `${a} – ${t}` : t || a;
++    }
++
++    implicitWidth: Math.max(icon.implicitWidth, title.implicitHeight)
++    implicitHeight: icon.implicitHeight + (title.text ? title.implicitWidth + Tokens.spacing.small : 0)
++
++    MaterialIcon {
++        id: icon
++
++        anchors.horizontalCenter: parent.horizontalCenter
++
++        animate: true
++        text: root.player?.isPlaying ? "pause_circle" : "play_circle"
++        fill: root.player?.isPlaying ? 1 : 0
++        color: Colours.palette.m3secondary
++
++        MouseArea {
++            anchors.fill: parent
++            anchors.margins: -Tokens.padding.small
++            cursorShape: Qt.PointingHandCursor
++            onClicked: root.player?.togglePlaying()
++            onWheel: wheel => {
++                if (wheel.angleDelta.y < 0 && root.player?.canGoNext)
++                    root.player.next();
++                else if (wheel.angleDelta.y > 0 && root.player?.canGoPrevious)
++                    root.player.previous();
++            }
++        }
++    }
++
++    StyledText {
++        id: title
++
++        anchors.horizontalCenter: icon.horizontalCenter
++        anchors.top: icon.bottom
++        anchors.topMargin: Tokens.spacing.small
++
++        text: metrics.elidedText
++        font: metrics.font
++        color: Colours.palette.m3onSurfaceVariant
++        opacity: root.player?.isPlaying ? 1 : 0.6
++
++        transform: Rotation {
++            angle: 90
++            origin.x: title.implicitHeight / 2
++            origin.y: title.implicitHeight / 2
++        }
++
++        width: implicitHeight
++        height: implicitWidth
++    }
++
++    TextMetrics {
++        id: metrics
++
++        text: root.label
++        font: root.Tokens.font.body.builders.small.letterSpacing(1.2).build()
++        elide: Qt.ElideRight
++        elideWidth: root.maxLength
++    }
++
++    Behavior on implicitHeight {
++        Anim {}
++    }
++}
