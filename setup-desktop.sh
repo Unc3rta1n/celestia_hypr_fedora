@@ -54,6 +54,10 @@ step "Dolphin: default file manager, starts in \$HOME, ghostty as terminal"
 xdg-mime default org.kde.dolphin.desktop inode/directory
 kwriteconfig6 --file dolphinrc --group General --key RememberOpenedTabs false
 kwriteconfig6 --file dolphinrc --group General --key HomeUrl "$HOME"
+# show hidden files everywhere (one global view instead of per-folder settings)
+kwriteconfig6 --file dolphinrc --group General --key GlobalViewProps true
+mkdir -p "$HOME/.local/share/dolphin/view_properties/global"
+kwriteconfig6 --file "$HOME/.local/share/dolphin/view_properties/global/.directory" --group Settings --key HiddenFilesShown true
 kwriteconfig6 --file kdeglobals --group General --key TerminalApplication "ghostty +new-window"
 kwriteconfig6 --file kdeglobals --group General --key TerminalService com.mitchellh.ghostty.desktop
 # KDE "Open with" lists apps from the XDG menu; outside Plasma there is none -> borrow xfce's
