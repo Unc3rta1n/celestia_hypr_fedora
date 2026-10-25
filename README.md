@@ -13,6 +13,20 @@ replaced by a locally patched [caelestia-shell](https://github.com/caelestia-dot
 
 Then log out/in. Rollback to the hyprlang config: `./deploy-lua.sh --rollback`.
 
+## Updating caelestia
+
+Everything is pinned (`SHELL_REF`, `QS_REV`, `M3_REV`, `CLI_REV` in `install-caelestia.sh`), so a rebuild
+always gives the same shell. To move to a newer caelestia:
+
+```bash
+./update-caelestia.sh --check   # latest main: patches apply? deps changed? QML loads?
+./update-caelestia.sh           # same, then bumps the pins and runs install-caelestia.sh
+./update-caelestia.sh <rev>     # a specific commit/tag
+```
+
+A patch that no longer applies stops it before anything is installed. Rollback:
+`git checkout <old> -- install-caelestia.sh && ./install-caelestia.sh`.
+
 ## Layout
 
 | Path | What |

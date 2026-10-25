@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Build & install caelestia-shell + deps on Fedora 44.
-# Pinned to the revisions caelestia-shell's flake.lock uses (2026-10-25).
+# Everything is pinned; quickshell/m3shapes/cli follow caelestia-shell's flake.lock.
+# Move to a newer caelestia with ./update-caelestia.sh (checks patches first), not by editing refs.
 set -euo pipefail
 
 QS_REV=9b0f339b19057f4731bf3b48293307d7ef241671       # quickshell
 M3_REV=32ad9ce328bb77ed349b40a3be10ee9ea610b8ab       # qt6-m3shapes
 CLI_REV=679af941c03f1899d017964c654f57d71cec47e5      # caelestia-cli
-SHELL_REF=main                                        # caelestia-shell
+SHELL_REF=4b1dae84b1b3b28bf486776ba30c1c1ec74fb64d    # caelestia-shell (bump with ./update-caelestia.sh)
 
 BUILD=${BUILD:-$HOME/.cache/caelestia-build}
 mkdir -p "$BUILD"
@@ -55,18 +56,18 @@ mark libcava
 fi
 
 step "quickshell @ ${QS_REV:0:8}"
-if ! done_or quickshell; then
+if ! done_or "quickshell-${QS_REV:0:8}"; then
 clone https://git.outfoxxed.me/quickshell/quickshell "$BUILD/quickshell" "$QS_REV"
 cmake -S "$BUILD/quickshell" -B "$BUILD/quickshell/build" -G Ninja \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=/usr \
     -DCRASH_HANDLER=OFF -DDISTRIBUTOR="fedora-local"
 cmake --build "$BUILD/quickshell/build"
 sudo cmake --install "$BUILD/quickshell/build"
-mark quickshell
+mark "quickshell-${QS_REV:0:8}"
 fi
 
 step "qt6-m3shapes @ ${M3_REV:0:8}"
-if ! done_or m3shapes; then
+if ! done_or "m3shapes-${M3_REV:0:8}"; then
 clone https://github.com/soramanew/m3shapes "$BUILD/m3shapes" "$M3_REV"
 cmake -S "$BUILD/m3shapes" -B "$BUILD/m3shapes/build" -G Ninja \
     -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DINSTALL_QMLDIR=lib64/qt6/qml
@@ -74,19 +75,23 @@ cmake --build "$BUILD/m3shapes/build"
 sudo cmake --install "$BUILD/m3shapes/build"
 # pinned m3shapes defaulted INSTALL_QMLDIR to "usr/lib/qt6/qml" -> stray /usr/usr from first run
 [[ -d /usr/usr/lib/qt6/qml/M3Shapes ]] && sudo rm -rf /usr/usr/lib/qt6/qml/M3Shapes && sudo rmdir -p --ignore-fail-on-non-empty /usr/usr/lib/qt6/qml 2>/dev/null || true
-mark m3shapes
+mark "m3shapes-${M3_REV:0:8}"
 fi
 
 step "caelestia-shell @ $SHELL_REF"
+# drop previously applied local patches, incl. files they created (keep build/), then go to the pin
+if [[ -d $BUILD/shell/.git ]]; then
+    git -C "$BUILD/shell" reset -q --hard
+    git -C "$BUILD/shell" clean -fdq -e build
+fi
 clone https://github.com/caelestia-dots/shell "$BUILD/shell" "$SHELL_REF"
-# drop previously applied local patches, incl. files they created (keep build/)
-git -C "$BUILD/shell" reset -q --hard
-git -C "$BUILD/shell" clean -fdq -e build
-git -C "$BUILD/shell" pull -q --ff-only || true
 for p in "$(dirname "$0")"/patches/caelestia/*.patch; do
     [[ -e $p ]] || continue
     echo "applying $(basename "$p")"
-    git -C "$BUILD/shell" apply "$(realpath "$p")"
+    git -C "$BUILD/shell" apply "$(realpath "$p")" || {
+        echo "patch $(basename "$p") no longer applies; installed shell left untouched" >&2
+        exit 1
+    }
 done
 cmake -S "$BUILD/shell" -B "$BUILD/shell/build" -G Ninja \
     -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
