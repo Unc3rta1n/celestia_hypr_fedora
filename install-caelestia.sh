@@ -26,6 +26,10 @@ clone() { # url dir rev
 step "dnf: build + runtime deps"
 # screen recorder used by `caelestia record` / utilities panel (not in Fedora or RPM Fusion)
 sudo dnf copr enable -y lezetho/gpu-screen-recorder
+# Fedora's libva-intel-media-driver has H.264/HEVC encode stripped -> recorder fails; RPM Fusion has the full one
+if lspci | grep -qi 'VGA.*Intel' && rpm -q libva-intel-media-driver >/dev/null 2>&1; then
+    sudo dnf swap -y libva-intel-media-driver intel-media-driver --allowerasing
+fi
 sudo dnf install -y \
     gcc-c++ cmake ninja-build meson pkgconf-pkg-config git autoconf-archive \
     qt6-qtbase-devel qt6-qtbase-private-devel qt6-qtdeclarative-devel qt6-qtshadertools-devel \
