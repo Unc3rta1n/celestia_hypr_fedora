@@ -1,0 +1,145 @@
+diff --git a/modules/bar/Bar.qml b/modules/bar/Bar.qml
+index 08b07380..ac068ef1 100644
+--- a/modules/bar/Bar.qml
++++ b/modules/bar/Bar.qml
+@@ -171,6 +171,15 @@ ColumnLayout {
+                     }
+                 }
+             }
++            DelegateChoice {
++                roleValue: "recording"
++                delegate: EntryWrapper {
++                    // only takes space in the bar while recording
++                    visible: Recorder.running
++
++                    RecordingEntry {}
++                }
++            }
+             DelegateChoice {
+                 roleValue: "statusIcons"
+                 delegate: EntryWrapper {
+diff --git a/modules/bar/components/RecordingEntry.qml b/modules/bar/components/RecordingEntry.qml
+new file mode 100644
+index 00000000..0e8d949a
+--- /dev/null
++++ b/modules/bar/components/RecordingEntry.qml
+@@ -0,0 +1,91 @@
++pragma ComponentBehavior: Bound
++
++import QtQuick
++import QtQuick.Layouts
++import Caelestia.Config
++import qs.components
++import qs.components.controls
++import qs.services
++
++// Bar entry "recording": blinking REC dot, elapsed time, pause/resume and stop.
++// The wrapper in Bar.qml hides it while nothing is recording.
++StyledRect {
++    id: root
++
++    readonly property int padding: Tokens.padding.small
++
++    implicitWidth: Tokens.sizes.bar.innerWidth
++    implicitHeight: layout.implicitHeight + root.padding * 2
++
++    color: Qt.alpha(Recorder.paused ? Colours.palette.m3tertiaryContainer : Colours.palette.m3errorContainer, 0.9)
++    radius: Tokens.rounding.full
++
++    // keeps Recorder polling pidof, so recordings started from a keybind/CLI show up too
++    Component.onCompleted: Recorder.refCount++
++    Component.onDestruction: Recorder.refCount--
++
++    ColumnLayout {
++        id: layout
++
++        anchors.centerIn: parent
++        spacing: Tokens.spacing.extraSmall
++
++        MaterialIcon {
++            Layout.alignment: Qt.AlignHCenter
++            text: Recorder.paused ? "pause_circle" : "radio_button_checked"
++            color: Recorder.paused ? Colours.palette.m3onTertiaryContainer : Colours.palette.m3error
++            fill: 1
++
++            SequentialAnimation on opacity {
++                running: Recorder.running && !Recorder.paused
++                alwaysRunToEnd: true
++                loops: Animation.Infinite
++
++                Anim {
++                    from: 1
++                    to: 0.2
++                    duration: Tokens.anim.durations.extraLarge
++                }
++                Anim {
++                    from: 0.2
++                    to: 1
++                    duration: Tokens.anim.durations.extraLarge
++                }
++            }
++        }
++
++        StyledText {
++            Layout.alignment: Qt.AlignHCenter
++            text: {
++                const e = Recorder.elapsed;
++                const h = Math.floor(e / 3600);
++                const m = Math.floor((e % 3600) / 60);
++                const s = Math.floor(e % 60).toString().padStart(2, "0");
++                return h > 0 ? `${h}:${m.toString().padStart(2, "0")}\n${s}` : `${m}:${s}`;
++            }
++            horizontalAlignment: Text.AlignHCenter
++            font: Tokens.font.mono.small
++            color: Recorder.paused ? Colours.palette.m3onTertiaryContainer : Colours.palette.m3onErrorContainer
++        }
++
++        IconButton {
++            Layout.alignment: Qt.AlignHCenter
++            type: IconButton.Text
++            isRound: true
++            inactiveOnColour: Recorder.paused ? Colours.palette.m3onTertiaryContainer : Colours.palette.m3onErrorContainer
++            icon: Recorder.paused ? "play_arrow" : "pause"
++            font: Tokens.font.icon.small
++            onClicked: Recorder.togglePause()
++        }
++
++        IconButton {
++            Layout.alignment: Qt.AlignHCenter
++            type: IconButton.Text
++            isRound: true
++            inactiveOnColour: Recorder.paused ? Colours.palette.m3onTertiaryContainer : Colours.palette.m3onErrorContainer
++            icon: "stop"
++            font: Tokens.font.icon.small
++            onClicked: Recorder.stop()
++        }
++    }
++}
+diff --git a/services/Recorder.qml b/services/Recorder.qml
+index 4246cb8e..8d1d2d6a 100644
+--- a/services/Recorder.qml
++++ b/services/Recorder.qml
+@@ -33,6 +33,23 @@ Singleton {
+         checkProc.running = true;
+     }
+ 
++    // keybinds go through the shell so its state (elapsed time, paused) stays right:
++    //   qs -c caelestia ipc call recorder toggle "-r -c"   start with these `caelestia record` args, or stop
++    IpcHandler {
++        function toggle(args: string): void {
++            root.needsStop = true;
++            root.needsStart = true;
++            root.startArgs = args.split(" ").filter(a => a);
++            checkProc.running = true;
++        }
++
++        function pause(): void {
++            root.togglePause();
++        }
++
++        target: "recorder"
++    }
++
+     PersistentProperties {
+         id: props
+ 

@@ -114,6 +114,10 @@
         "enabled": true
       },
       {
+        "id": "recording",
+        "enabled": true
+      },
+      {
         "id": "tray",
         "enabled": true
       },
