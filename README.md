@@ -50,6 +50,7 @@ A patch that no longer applies stops it before anything is installed. Rollback:
 7. area picker OCR mode (`caelestia:ocr`, tesseract rus+eng -> clipboard)
 8. bar: recording indicator (REC, timer, pause, stop) + `recorder toggle|pause` IPC
 9. nerd-font glyphs in `bar.workspaces.windowIcons` (window icons migrated from waybar window-rewrite)
+10. tray menus show checkbox / radio state
 
 ## Keys
 

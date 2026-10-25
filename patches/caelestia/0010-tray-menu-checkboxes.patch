@@ -1,0 +1,33 @@
+diff --git a/modules/bar/popouts/TrayMenu.qml b/modules/bar/popouts/TrayMenu.qml
+index 59a88e91..df02523b 100644
+--- a/modules/bar/popouts/TrayMenu.qml
++++ b/modules/bar/popouts/TrayMenu.qml
+@@ -155,7 +155,27 @@ StackView {
+                             font: label.font
+ 
+                             elide: Text.ElideRight
+-                            elideWidth: root.Tokens.sizes.bar.trayMenuWidth - (icon.active ? icon.implicitWidth + label.anchors.leftMargin : 0) - (expand.active ? expand.implicitWidth + root.Tokens.spacing.medium : 0)
++                            elideWidth: root.Tokens.sizes.bar.trayMenuWidth - (icon.active ? icon.implicitWidth + label.anchors.leftMargin : 0) - (expand.active ? expand.implicitWidth + root.Tokens.spacing.medium : 0) - (check.active ? check.implicitWidth + root.Tokens.spacing.medium : 0)
++                        }
++
++                        // checkbox / radio items (e.g. a proxy client's "System proxy", "TUN mode")
++                        Loader {
++                            id: check
++
++                            asynchronous: true
++                            anchors.verticalCenter: parent.verticalCenter
++                            anchors.right: parent.right
++
++                            active: item.modelData.buttonType !== QsMenuButtonType.None
++
++                            sourceComponent: MaterialIcon {
++                                readonly property bool checked: item.modelData.checkState === Qt.Checked
++                                readonly property bool radio: item.modelData.buttonType === QsMenuButtonType.RadioButton
++
++                                text: radio ? (checked ? "radio_button_checked" : "radio_button_unchecked") : (checked ? "check_box" : "check_box_outline_blank")
++                                fill: checked ? 1 : 0
++                                color: !item.modelData.enabled ? Colours.palette.m3outline : checked ? Colours.palette.m3primary : Colours.palette.m3onSurfaceVariant
++                            }
+                         }
+ 
+                         Loader {
