@@ -51,7 +51,7 @@ A patch that no longer applies stops it before anything is installed. Rollback:
 8. bar: recording indicator (REC, timer, pause, stop) + `recorder toggle|pause` IPC
 9. nerd-font glyphs in `bar.workspaces.windowIcons` (window icons migrated from waybar window-rewrite)
 10. tray menus show checkbox / radio state
-11. bar: media entry (play/pause, wheel = next/prev, vertical "Artist – Title")
+11. bar: media entry (play/pause, wheel = next/prev) + hover popout with cover, title, progress, controls
 
 ## Keys
 

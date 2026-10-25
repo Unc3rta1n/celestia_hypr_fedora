@@ -1,8 +1,19 @@
 diff --git a/modules/bar/Bar.qml b/modules/bar/Bar.qml
-index ac068ef1..911948b9 100644
+index ac068ef1..30063ee8 100644
 --- a/modules/bar/Bar.qml
 +++ b/modules/bar/Bar.qml
-@@ -171,6 +171,15 @@ ColumnLayout {
+@@ -68,6 +68,10 @@ ColumnLayout {
+                 popouts.hasCurrent = false;
+                 tray.expanded = true;
+             }
++        } else if (id === "media") {
++            popouts.currentName = "media";
++            popouts.currentCenter = (ch.item as Item).mapToItem(root, 0, (ch.item as Item).implicitHeight / 2).y ?? 0;
++            popouts.hasCurrent = true;
+         } else if (id === "activeWindow" && Config.bar.popouts.activeWindow && Config.bar.activeWindow.showOnHover) {
+             popouts.currentName = id.toLowerCase();
+             popouts.currentCenter = (ch.item as Item).mapToItem(root, 0, (ch.item as Item).implicitHeight / 2).y ?? 0;
+@@ -171,6 +175,15 @@ ColumnLayout {
                      }
                  }
              }
@@ -20,10 +31,10 @@ index ac068ef1..911948b9 100644
                  delegate: EntryWrapper {
 diff --git a/modules/bar/components/MediaEntry.qml b/modules/bar/components/MediaEntry.qml
 new file mode 100644
-index 00000000..faca0ac1
+index 00000000..23c00687
 --- /dev/null
 +++ b/modules/bar/components/MediaEntry.qml
-@@ -0,0 +1,82 @@
+@@ -0,0 +1,34 @@
 +pragma ComponentBehavior: Bound
 +
 +import QtQuick
@@ -31,78 +42,180 @@ index 00000000..faca0ac1
 +import qs.components
 +import qs.services
 +
-+// Bar entry "media" (was waybar mpris): play/pause button + vertical "Artist – Title".
-+// Click the icon: play/pause; wheel over it: next/previous track. Hidden by Bar.qml without a player.
-+Item {
++// Bar entry "media" (was waybar mpris): play/pause icon; hover shows the "media" popout
++// (cover, title, controls). Click: play/pause; wheel: next/previous. Hidden by Bar.qml without a player.
++MaterialIcon {
 +    id: root
 +
 +    readonly property var player: Players.active
-+    readonly property int maxLength: 160
-+    readonly property string label: {
-+        const t = player?.trackTitle ?? "";
-+        const a = player?.trackArtist ?? "";
-+        return a && t ? `${a} – ${t}` : t || a;
++
++    animate: true
++    text: player?.isPlaying ? "pause_circle" : "play_circle"
++    fill: player?.isPlaying ? 1 : 0
++    color: Colours.palette.m3secondary
++
++    MouseArea {
++        anchors.fill: parent
++        anchors.margins: -Tokens.padding.small
++        cursorShape: Qt.PointingHandCursor
++        // let hover reach the bar so it can open the popout
++        hoverEnabled: false
++        onClicked: root.player?.togglePlaying()
++        onWheel: wheel => {
++            if (wheel.angleDelta.y < 0 && root.player?.canGoNext)
++                root.player.next();
++            else if (wheel.angleDelta.y > 0 && root.player?.canGoPrevious)
++                root.player.previous();
++        }
 +    }
-+
-+    implicitWidth: Math.max(icon.implicitWidth, title.implicitHeight)
-+    implicitHeight: icon.implicitHeight + (title.text ? title.implicitWidth + Tokens.spacing.small : 0)
-+
-+    MaterialIcon {
-+        id: icon
-+
-+        anchors.horizontalCenter: parent.horizontalCenter
-+
-+        animate: true
-+        text: root.player?.isPlaying ? "pause_circle" : "play_circle"
-+        fill: root.player?.isPlaying ? 1 : 0
-+        color: Colours.palette.m3secondary
-+
-+        MouseArea {
-+            anchors.fill: parent
-+            anchors.margins: -Tokens.padding.small
-+            cursorShape: Qt.PointingHandCursor
-+            onClicked: root.player?.togglePlaying()
-+            onWheel: wheel => {
-+                if (wheel.angleDelta.y < 0 && root.player?.canGoNext)
-+                    root.player.next();
-+                else if (wheel.angleDelta.y > 0 && root.player?.canGoPrevious)
-+                    root.player.previous();
++}
+diff --git a/modules/bar/popouts/Content.qml b/modules/bar/popouts/Content.qml
+index 567b6cce..b66fe7fb 100644
+--- a/modules/bar/popouts/Content.qml
++++ b/modules/bar/popouts/Content.qml
+@@ -29,6 +29,13 @@ Item {
+         anchors.fill: parent
+         anchors.margins: Tokens.padding.large
+ 
++        Popout {
++            name: "media"
++            sourceComponent: MediaPopout {
++                popouts: root.popouts
 +            }
 +        }
++
+         Popout {
+             name: "activewindow"
+             sourceComponent: ActiveWindow {
+diff --git a/modules/bar/popouts/MediaPopout.qml b/modules/bar/popouts/MediaPopout.qml
+new file mode 100644
+index 00000000..92fa215e
+--- /dev/null
++++ b/modules/bar/popouts/MediaPopout.qml
+@@ -0,0 +1,126 @@
++pragma ComponentBehavior: Bound
++
++import QtQuick
++import QtQuick.Layouts
++import Caelestia.Components
++import Caelestia.Config
++import Caelestia.I18n
++import qs.components
++import qs.components.controls
++import qs.components.widgets
++import qs.services
++
++// Popout for the bar "media" entry: cover, title / artist, position and prev / play-pause / next.
++Item {
++    id: root
++
++    required property PopoutState popouts
++    readonly property var player: Players.active
++    readonly property int contentWidth: 260
++
++    function timeStr(secs: real): string {
++        if (!(secs >= 0))
++            return "--:--";
++        const h = Math.floor(secs / 3600);
++        const m = Math.floor((secs % 3600) / 60);
++        const s = Math.floor(secs % 60).toString().padStart(2, "0");
++        return h > 0 ? `${h}:${m.toString().padStart(2, "0")}:${s}` : `${m}:${s}`;
 +    }
 +
-+    StyledText {
-+        id: title
++    implicitWidth: contentWidth
++    implicitHeight: layout.implicitHeight
 +
-+        anchors.horizontalCenter: icon.horizontalCenter
-+        anchors.top: icon.bottom
-+        anchors.topMargin: Tokens.spacing.small
++    Timer {
++        running: root.player?.isPlaying ?? false
++        interval: 1000
++        repeat: true
++        triggeredOnStart: true
++        onTriggered: root.player?.positionChanged()
++    }
 +
-+        text: metrics.elidedText
-+        font: metrics.font
-+        color: Colours.palette.m3onSurfaceVariant
-+        opacity: root.player?.isPlaying ? 1 : 0.6
++    ColumnLayout {
++        id: layout
 +
-+        transform: Rotation {
-+            angle: 90
-+            origin.x: title.implicitHeight / 2
-+            origin.y: title.implicitHeight / 2
++        anchors.left: parent.left
++        anchors.right: parent.right
++        spacing: Tokens.spacing.small
++
++        CoverArt {
++            Layout.alignment: Qt.AlignHCenter
++            implicitWidth: root.contentWidth - Tokens.padding.extraLargeIncreased * 2
++            implicitHeight: implicitWidth
 +        }
 +
-+        width: implicitHeight
-+        height: implicitWidth
-+    }
++        StyledText {
++            Layout.fillWidth: true
++            Layout.topMargin: Tokens.spacing.small
++            horizontalAlignment: Text.AlignHCenter
++            animate: true
++            text: (root.player?.trackTitle ?? "") || Tr.tr("Unknown title")
++            color: Colours.palette.m3primary
++            font: Tokens.font.title.small
++            elide: Text.ElideRight
++        }
 +
-+    TextMetrics {
-+        id: metrics
++        StyledText {
++            Layout.fillWidth: true
++            horizontalAlignment: Text.AlignHCenter
++            animate: true
++            text: (root.player?.trackArtist ?? "") || Tr.tr("Unknown artist")
++            color: Colours.palette.m3secondary
++            elide: Text.ElideRight
++        }
 +
-+        text: root.label
-+        font: root.Tokens.font.body.builders.small.letterSpacing(1.2).build()
-+        elide: Qt.ElideRight
-+        elideWidth: root.maxLength
-+    }
++        StyledProgressBar {
++            Layout.fillWidth: true
++            Layout.topMargin: Tokens.spacing.small
++            visible: root.player?.lengthSupported ?? false
++            value: root.player?.length > 0 ? (root.player.position % root.player.length) / root.player.length : 0
++            wavy: true
++            wavePaused: !(root.player?.isPlaying ?? false)
++        }
 +
-+    Behavior on implicitHeight {
-+        Anim {}
++        StyledText {
++            Layout.fillWidth: true
++            visible: root.player?.lengthSupported ?? false
++            horizontalAlignment: Text.AlignHCenter
++            text: `${root.timeStr(root.player?.position ?? -1)} / ${root.timeStr(root.player?.length ?? -1)}`
++            color: Colours.palette.m3outline
++            font: Tokens.font.body.small
++        }
++
++        ButtonRow {
++            Layout.fillWidth: true
++            Layout.topMargin: Tokens.spacing.small
++            spacing: Tokens.spacing.extraSmall
++
++            IconButton {
++                type: IconButton.Tonal
++                icon: "skip_previous"
++                isRound: true
++                shapeMorph: true
++                disabled: !root.player?.canGoPrevious
++                onClicked: root.player?.previous()
++            }
++
++            IconButton {
++                fillWidth: true
++                icon: root.player?.isPlaying ? "pause" : "play_arrow"
++                isRound: true
++                shapeMorph: true
++                checked: root.player?.isPlaying ?? false
++                disabled: !root.player?.canTogglePlaying
++                onClicked: root.player?.togglePlaying()
++            }
++
++            IconButton {
++                type: IconButton.Tonal
++                icon: "skip_next"
++                isRound: true
++                shapeMorph: true
++                disabled: !root.player?.canGoNext
++                onClicked: root.player?.next()
++            }
++        }
 +    }
 +}
