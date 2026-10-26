@@ -84,6 +84,7 @@ A patch that no longer applies stops it before anything is installed. Rollback:
 26. notifications: "clear all" rebuilds the list once, no freeze with a long history (upstream PR #2021)
 27. notifications: raw HTML stripped in elided previews (popup, sidebar, lockscreen) (upstream PR #1851)
 28. screen recorder: the bar timer starts once the area is picked, not while slurp is waiting
+29. battery popout: no "Performance degraded / too hot" banner (tuned-ppd raises it whenever power-saver is on)
 
 ## Keys
 
