@@ -15,6 +15,7 @@ require("lua.autostart")
 
 -- nwg-displays output (it writes monitors.lua / workspaces.lua itself)
 require("monitors")
+require("lua.workspace_home") -- before workspaces: reads its rules, moves workspaces back on replug
 require("workspaces")
 
 -- Local overrides that should survive updates
