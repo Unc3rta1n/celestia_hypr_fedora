@@ -1,0 +1,65 @@
+diff --git a/modules/drawers/Interactions.qml b/modules/drawers/Interactions.qml
+index 8cc64ca3..c4ff16a6 100644
+--- a/modules/drawers/Interactions.qml
++++ b/modules/drawers/Interactions.qml
+@@ -24,6 +24,26 @@ CustomMouseArea {
+     property bool utilitiesShortcutActive
+     property bool sidebarShortcutActive
+ 
++    // macOS-style "safe triangle": while the cursor heads from the bar towards an open popout,
++    // hovering other bar entries on the way doesn't switch or close it
++    property point aimApex
++
++    function aimingAtPopout(x: real, y: real): bool {
++        if (!popouts.hasCurrent)
++            return false;
++
++        const panel = panels.popoutsWrapper;
++        const edgeX = bar.implicitWidth + panel.x;
++        const top = root.borderThickness + panel.y - Config.border.rounding;
++        const bottom = root.borderThickness + panel.y + panel.height + Config.border.rounding;
++        if (panel.width <= 0 || edgeX <= aimApex.x)
++            return false;
++
++        // Inside the triangle (apex, top-left and bottom-left corners of the popout)
++        const t = (x - aimApex.x) / (edgeX - aimApex.x);
++        return t > 0 && y >= aimApex.y + (top - aimApex.y) * t && y <= aimApex.y + (bottom - aimApex.y) * t;
++    }
++
+     function withinPanelHeight(panel: Item, x: real, y: real): bool {
+         const panelY = root.borderThickness + panel.y;
+         return y >= panelY - Config.border.rounding && y <= panelY + panel.height + Config.border.rounding;
+@@ -243,13 +263,32 @@ CustomMouseArea {
+ 
+         // Show popouts on hover
+         if (x < bar.implicitWidth) {
+-            bar.checkPopout(y);
++            if (aimingAtPopout(x, y)) {
++                aimTimer.restart();
++            } else {
++                aimTimer.stop();
++                aimApex = Qt.point(x, y);
++                bar.checkPopout(y);
++            }
+         } else if ((!popouts.currentName.startsWith("traymenu") || ((popouts.current as StackView)?.depth ?? 0) <= 1) && !inLeftPanel(panels.popoutsWrapper, x, y)) {
+             popouts.hasCurrent = false;
+             bar.closeTray();
+         }
+     }
+ 
++    // Cursor stopped inside the triangle: it's not heading to the popout, honour the hover
++    Timer {
++        id: aimTimer
++
++        interval: 300
++        onTriggered: {
++            if (root.containsMouse && root.mouseX < root.bar.implicitWidth && !root.popouts.isDetached) {
++                root.aimApex = Qt.point(root.mouseX, root.mouseY);
++                root.bar.checkPopout(root.mouseY);
++            }
++        }
++    }
++
+     // Monitor individual visibility changes
+     Connections {
+         function onLauncherChanged() {
