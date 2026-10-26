@@ -90,6 +90,7 @@ A patch that no longer applies stops it before anything is installed. Rollback:
 32. notifications: null-safe `modelData` in popups, no `Cannot read property ... of null` spam (upstream PR #2009)
 33. lockscreen: `pam.d/other` deny fallback, no `no default config other` in the journal (upstream PR #2111)
 34. Yandex Music: "Now playing" toast once per track (waits for the metadata to settle, no repeat within the track length), cover remembered even when no cover widget is open, catalogue cover looked up when Firefox sends none
+35. bar `activeWindow`: title shown only when at least 120 px are free, otherwise icon only (full title stays in the hover popout)
 
 Outside the shell: `lua/workspace_home.lua` moves workspaces back to their monitor (rules from
 `workspaces.lua`) when it is plugged in again; `lua/screenshare_dnd.lua` turns on do-not-disturb while the

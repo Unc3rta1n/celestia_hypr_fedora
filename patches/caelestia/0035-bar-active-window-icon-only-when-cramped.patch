@@ -1,0 +1,29 @@
+diff --git a/modules/bar/components/ActiveWindow.qml b/modules/bar/components/ActiveWindow.qml
+index e23cb6f6..837ed613 100644
+--- a/modules/bar/components/ActiveWindow.qml
++++ b/modules/bar/components/ActiveWindow.qml
+@@ -33,11 +33,14 @@ Item {
+         // Length - 2 cause repeater counts as a child
+         return bar.height - otherHeight - bar.spacing * (bar.children.length - 1) - bar.vPadding * 2;
+     }
++    // Title needs room to be readable; below that only the icon is shown (full title is in the hover popout)
++    readonly property int minTitleLength: 120
++    readonly property bool showTitle: maxHeight - icon.height >= minTitleLength
+     property Title current: text1
+ 
+     clip: true
+     implicitWidth: Math.max(icon.implicitWidth, current.implicitHeight)
+-    implicitHeight: icon.implicitHeight + current.implicitWidth + current.anchors.topMargin
++    implicitHeight: icon.implicitHeight + (showTitle ? current.implicitWidth + current.anchors.topMargin : 0)
+ 
+     Loader {
+         asynchronous: true
+@@ -112,7 +115,7 @@ Item {
+ 
+         font: metrics.font
+         color: root.colour
+-        opacity: root.current === this ? 1 : 0
++        opacity: root.showTitle && root.current === this ? 1 : 0
+         horizontalAlignment: Text.AlignLeft
+ 
+         transform: [
