@@ -103,3 +103,4 @@ Super+H shows every bind, grouped. New ones: Super+` Telegram scratchpad, Super+
 Super+Shift+T OCR, Super+Alt+Q QR code, Super+Shift+R / Super+Ctrl+R record area / monitor+sound (again = stop),
 Super+Ctrl+Shift+R pause.
 36. bar `gpu` entry: NVIDIA dGPU load % and temperature while it is busy (>=5 % or >=8 W); polled only while the card is runtime-active, so it is never woken
+37. now-playing toast shows the track cover instead of the music note (`ToastItem` renders the `icon` as an image when it is a file/http URL; `Players` passes `getArtUrl`)

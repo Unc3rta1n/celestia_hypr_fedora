@@ -1,0 +1,96 @@
+diff --git a/modules/utilities/toasts/ToastItem.qml b/modules/utilities/toasts/ToastItem.qml
+index a7d65ecc..43588adb 100644
+--- a/modules/utilities/toasts/ToastItem.qml
++++ b/modules/utilities/toasts/ToastItem.qml
+@@ -1,5 +1,6 @@
+ import QtQuick
+ import QtQuick.Layouts
++import Quickshell.Widgets
+ import Caelestia
+ import Caelestia.Config
+ import Caelestia.I18n
+@@ -13,6 +14,8 @@ StyledRect {
+     required property Toast modelData
+     // keyboard layout toast: one line with just the layout name, sized to its text
+     readonly property bool compact: modelData.icon === "keyboard"
++    // the icon field carries a cover url for the now-playing toast
++    readonly property bool hasCover: /^(file|https?):\/\//.test(modelData.icon)
+ 
+     anchors.left: compact ? undefined : parent.left
+     anchors.right: parent.right
+@@ -73,10 +76,28 @@ StyledRect {
+ 
+             implicitWidth: implicitHeight
+             implicitHeight: icon.implicitHeight + (root.compact ? Tokens.padding.small : Tokens.padding.large)
++            Layout.preferredHeight: root.hasCover ? implicitHeight * 1.3 : implicitHeight
++            Layout.preferredWidth: Layout.preferredHeight
++
++            ClippingRectangle {
++                anchors.fill: parent
++                radius: parent.radius
++                color: "transparent"
++                visible: root.hasCover
++
++                Image {
++                    anchors.fill: parent
++                    source: root.hasCover ? root.modelData.icon : ""
++                    fillMode: Image.PreserveAspectCrop
++                    asynchronous: true
++                }
++            }
+ 
+             MaterialIcon {
+                 id: icon
+ 
++                visible: !root.hasCover
++
+                 anchors.centerIn: parent
+                 text: root.modelData.icon
+                 color: {
+diff --git a/services/Players.qml b/services/Players.qml
+index 5705ce06..cc2c004c 100644
+--- a/services/Players.qml
++++ b/services/Players.qml
+@@ -137,18 +137,40 @@ Singleton {
+         if (key === lastNowPlayingKey && now - lastNowPlayingAt < repeatAfter)
+             return;
+ 
++        // the hi-res cover lookup is a network request; give it a moment so the toast doesn't show the 40x40 one
++        const art = getArtUrl(player);
++        if (art.includes("/firefox-mpris/") && hiResArt[`${artist}|${title}`] === null && nowPlayingArtTries < nowPlayingArtMaxTries) {
++            nowPlayingArtTries++;
++            nowPlayingArtWait.restart();
++            return;
++        }
++
++        nowPlayingArtTries = 0;
+         lastNowPlayingKey = key;
+         lastNowPlayingAt = now;
+-        Toaster.toast(Tr.tr("Now playing"), Tr.trCtx("%1 - %2", "track artist and title").arg(artist).arg(title), "music_note");
++        Toaster.toast(Tr.tr("Now playing"), Tr.trCtx("%1 - %2", "track artist and title").arg(artist).arg(title), art || "music_note");
+     }
+ 
+     onActiveChanged: lastNowPlayingKey = ""
+ 
++    property int nowPlayingArtTries: 0
++    readonly property int nowPlayingArtMaxTries: 8
++
++    Timer {
++        id: nowPlayingArtWait
++
++        interval: 400
++        onTriggered: root.maybeToastNowPlaying()
++    }
++
+     Timer {
+         id: nowPlayingSettle
+ 
+         interval: 800
+-        onTriggered: root.maybeToastNowPlaying()
++        onTriggered: {
++            root.nowPlayingArtTries = 0;
++            root.maybeToastNowPlaying();
++        }
+     }
+ 
+     Connections {
