@@ -20,14 +20,30 @@ build_list() {
     done
 }
 
+# The window to paste into, taken before fuzzel opens: after it closes, focus may not be back yet,
+# and a shortcut sent "to the active window" then went nowhere (paste worked only every other time).
+read -r win class < <(hyprctl activewindow -j | jq -r '"\(.address // "") \(.class // "" | ascii_downcase)"')
+
 paste() {
-    local class
-    class=$(hyprctl activewindow -j | jq -r '.class // ""' | tr '[:upper:]' '[:lower:]')
-    case $class in
-    *kitty* | *alacritty* | *foot* | *wezterm* | *ghostty* | *konsole* | *terminal* | *xterm*)
-        hyprctl dispatch 'hl.dsp.send_shortcut({ mods = "CTRL SHIFT", key = "V" })' ;;
-    *) hyprctl dispatch 'hl.dsp.send_shortcut({ mods = "CTRL", key = "V" })' ;;
-    esac >/dev/null
+    [[ -n $win ]] || return
+    hyprctl dispatch "hl.dsp.focus({ window = \"address:$win\" })" >/dev/null
+    local i
+    for i in {1..10}; do
+        [[ $(hyprctl activewindow -j | jq -r '.address // ""') == "$win" ]] && break
+        sleep 0.05
+    done
+    # Images: Ctrl+V everywhere (in a terminal it reaches the app: Claude Code attaches the image).
+    # Text: Ctrl+Shift+V in terminals and VS Code (its terminal pastes with it, and the editor does
+    # too via a keybinding in ~/.config/Code/User/keybindings.json), Ctrl+V elsewhere.
+    local mods=CTRL
+    if ! wl-paste -l 2>/dev/null | grep -q '^image/'; then
+        case $class in
+        *kitty* | *alacritty* | *foot* | *wezterm* | *ghostty* | *konsole* | *terminal* | *xterm* | *vscode*)
+            mods="CTRL SHIFT" ;;
+        esac
+    fi
+    # V by keycode: a key name is looked up in the active layout, and Russian has no "V"
+    hyprctl dispatch "hl.dsp.send_shortcut({ mods = \"$mods\", key = \"code:55\" })" >/dev/null
 }
 
 while :; do

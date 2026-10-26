@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Desktop tweaks made by hand outside ~/.config/hypr during the migration. Idempotent: rerun safely.
 #   ghostty / zsh colours from caelestia, Qt + KDE fonts, cursor (XCursor fallback), Dolphin defaults,
-#   menus for "Open with", swaync out of the way, lid suspend when docked, workspace overview.
+#   menus for "Open with", swaync out of the way, lid suspend when docked, workspace overview,
+#   VS Code Ctrl+Shift+V paste (for clipboard.sh).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 
@@ -79,5 +80,25 @@ step "workspace overview (Super+A)"
 ov=$HOME/.config/quickshell/overview
 [[ -d $ov/.git ]] || git clone https://github.com/Shanu-Kumawat/quickshell-overview "$ov"
 git -C "$ov" checkout -q 47f0d402822b26805ed0ecea4a770c38c537b728
+
+step "VS Code: Ctrl+Shift+V pastes in the editor too (Super+V clipboard.sh sends it for text)"
+kb=$HOME/.config/Code/User/keybindings.json
+if [[ -f $kb ]] && ! grep -q '"editor.action.clipboardPasteAction"' "$kb"; then
+    # keybindings.json is JSONC (comments, trailing commas): insert before the closing bracket
+    python3 - "$kb" <<'EOF'
+import sys
+p = sys.argv[1]
+s = open(p).read().rstrip()
+entry = '''    // Super+V (hypr clipboard.sh) pastes text into VS Code with Ctrl+Shift+V: the integrated terminal
+    // already pastes with it, make the editor do the same (Markdown preview stays on Ctrl+K V)
+    {
+        "key": "ctrl+shift+v",
+        "command": "editor.action.clipboardPasteAction",
+        "when": "editorTextFocus && !terminalFocus"
+    },
+]'''
+open(p, "w").write(s[:-1].rstrip() + "\n" + entry + "\n")
+EOF
+fi
 
 echo -e "\nDone. Log out/in so cursor + env changes reach every app."
