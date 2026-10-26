@@ -1,0 +1,159 @@
+diff --git a/components/containers/StyledWindow.qml b/components/containers/StyledWindow.qml
+index 72bbed6f..a9013fcf 100644
+--- a/components/containers/StyledWindow.qml
++++ b/components/containers/StyledWindow.qml
+@@ -10,6 +10,6 @@ PanelWindow {
+     WlrLayershell.namespace: `caelestia-${name}`
+     color: "transparent"
+ 
+-    contentItem.Config.screen: screen.name
+-    contentItem.Tokens.screen: screen.name
++    contentItem.Config.screen: screen?.name ?? ""
++    contentItem.Tokens.screen: screen?.name ?? ""
+ }
+diff --git a/modules/background/Visualiser.qml b/modules/background/Visualiser.qml
+index 22622f4d..64abaf5b 100644
+--- a/modules/background/Visualiser.qml
++++ b/modules/background/Visualiser.qml
+@@ -16,7 +16,7 @@ Item {
+     required property Item wallpaper
+ 
+     readonly property bool shouldBeActive: Config.background.visualiser.enabled && (!Config.background.visualiser.autoHide || (Hypr.monitorFor(screen)?.activeWorkspace?.toplevels?.values.every(t => t.lastIpcObject?.floating) ?? true))
+-    property real offset: shouldBeActive ? 0 : screen.height * 0.2
++    property real offset: shouldBeActive ? 0 : (screen?.height ?? 0) * 0.2
+ 
+     opacity: shouldBeActive ? 1 : 0
+ 
+diff --git a/modules/bar/Bar.qml b/modules/bar/Bar.qml
+index 30063ee8..79af90b4 100644
+--- a/modules/bar/Bar.qml
++++ b/modules/bar/Bar.qml
+@@ -147,7 +147,7 @@ ColumnLayout {
+                     ActiveWindow {
+                         objectName: "taskbarActiveWindow"
+                         bar: root
+-                        monitor: Brightness.getMonitorForScreen(root.screen)
++                        monitor: Brightness.getMonitorForScreen(root.screen) ?? null
+                     }
+                 }
+             }
+diff --git a/modules/bar/BarWrapper.qml b/modules/bar/BarWrapper.qml
+index 1ae18a69..3056b830 100644
+--- a/modules/bar/BarWrapper.qml
++++ b/modules/bar/BarWrapper.qml
+@@ -15,7 +15,7 @@ Item {
+     required property BarPopouts.Wrapper popouts
+     required property bool fullscreen
+ 
+-    readonly property bool disabled: Strings.testRegexList(Config.bar.excludedScreens, screen.name)
++    readonly property bool disabled: Strings.testRegexList(Config.bar.excludedScreens, screen?.name ?? "")
+ 
+     readonly property int clampedWidth: Math.max(Config.border.minThickness, implicitWidth)
+     readonly property int padding: Math.max(Tokens.padding.small, Config.border.thickness)
+diff --git a/modules/drawers/ContentWindow.qml b/modules/drawers/ContentWindow.qml
+index 9f82df2d..834c5466 100644
+--- a/modules/drawers/ContentWindow.qml
++++ b/modules/drawers/ContentWindow.qml
+@@ -48,7 +48,7 @@ StyledWindow {
+         if (focusGrab.active || panels.popouts.isDetached)
+             return 0;
+ 
+-        if (monitor?.lastIpcObject.specialWorkspace?.name || monitor?.activeWorkspace?.toplevels.values.length > 0)
++        if (monitor?.lastIpcObject?.specialWorkspace?.name || (monitor?.activeWorkspace?.toplevels?.values.length ?? 0) > 0)
+             return 0;
+ 
+         const thresholds = [];
+diff --git a/modules/launcher/Wrapper.qml b/modules/launcher/Wrapper.qml
+index 8956b805..f4571723 100644
+--- a/modules/launcher/Wrapper.qml
++++ b/modules/launcher/Wrapper.qml
+@@ -16,7 +16,7 @@ Item {
+     readonly property bool shouldBeActive: screenState.launcher && Config.launcher.enabled
+ 
+     readonly property real maxHeight: {
+-        let max = screen.height - Config.border.thickness * 2 + Tokens.padding.extraLarge;
++        let max = (screen?.height ?? 0) - Config.border.thickness * 2 + Tokens.padding.extraLarge;
+         if (screenState.dashboard)
+             max -= panels.dashboard.nonAnimHeight;
+         return max;
+diff --git a/modules/lock/LockSurface.qml b/modules/lock/LockSurface.qml
+index 8751d3aa..9e508f01 100644
+--- a/modules/lock/LockSurface.qml
++++ b/modules/lock/LockSurface.qml
+@@ -23,8 +23,8 @@ WlSessionLockSurface {
+     readonly property real boxWidth: portrait ? (screen?.width ?? 0) * 0.9 : (screen?.height ?? 0) * Tokens.sizes.lock.heightMult * Tokens.sizes.lock.ratio
+     readonly property real boxHeight: portrait ? (screen?.height ?? 0) * 0.8 : (screen?.height ?? 0) * Tokens.sizes.lock.heightMult
+ 
+-    contentItem.Config.screen: screen.name
+-    contentItem.Tokens.screen: screen.name
++    contentItem.Config.screen: screen?.name ?? ""
++    contentItem.Tokens.screen: screen?.name ?? ""
+ 
+     color: "transparent"
+ 
+diff --git a/modules/nexus/Nexus.qml b/modules/nexus/Nexus.qml
+index 7c0e7d1e..51ee6964 100644
+--- a/modules/nexus/Nexus.qml
++++ b/modules/nexus/Nexus.qml
+@@ -21,7 +21,7 @@ Item {
+     signal close
+ 
+     implicitWidth: Math.round(implicitHeight * Tokens.sizes.nexus.ratio)
+-    implicitHeight: Math.round(nState.screen.height * Tokens.sizes.nexus.heightMult)
++    implicitHeight: Math.round((nState.screen?.height ?? 0) * Tokens.sizes.nexus.heightMult)
+ 
+     Behavior on blobColour {
+         CAnim {}
+diff --git a/modules/nexus/WindowFactory.qml b/modules/nexus/WindowFactory.qml
+index ad9dfdfe..7a7e9a61 100644
+--- a/modules/nexus/WindowFactory.qml
++++ b/modules/nexus/WindowFactory.qml
+@@ -39,8 +39,8 @@ Singleton {
+             minimumSize.width: contentItem.Tokens.sizes.nexus.minWidth
+             minimumSize.height: contentItem.Tokens.sizes.nexus.minHeight
+ 
+-            contentItem.Config.screen: screen.name
+-            contentItem.Tokens.screen: screen.name
++            contentItem.Config.screen: screen?.name ?? ""
++            contentItem.Tokens.screen: screen?.name ?? ""
+ 
+             title: Tr.tr("Nexus — %1").arg(PageRegistry.pages[nexus.nState.currentPageIdx].label)
+ 
+diff --git a/modules/windowinfo/WindowInfo.qml b/modules/windowinfo/WindowInfo.qml
+index a3e039ed..9f52b47d 100644
+--- a/modules/windowinfo/WindowInfo.qml
++++ b/modules/windowinfo/WindowInfo.qml
+@@ -13,7 +13,7 @@ Item {
+     required property HyprlandToplevel client
+ 
+     implicitWidth: child.implicitWidth
+-    implicitHeight: screen.height * Tokens.sizes.winfo.heightMult
++    implicitHeight: (screen?.height ?? 0) * Tokens.sizes.winfo.heightMult
+ 
+     RowLayout {
+         id: child
+diff --git a/services/Brightness.qml b/services/Brightness.qml
+index dd9b68e4..2793543f 100644
+--- a/services/Brightness.qml
++++ b/services/Brightness.qml
+@@ -166,7 +166,7 @@ Singleton {
+         id: monitor
+ 
+         required property ShellScreen modelData
+-        readonly property var ddcInfo: root.ddcMonitorMap[modelData.name] ?? null
++        readonly property var ddcInfo: root.ddcMonitorMap[modelData?.name ?? ""] ?? null
+         readonly property bool isDdc: ddcInfo !== null
+         readonly property string busNum: ddcInfo?.busNum ?? ""
+         readonly property bool isAppleDisplay: root.appleDisplayPresent && modelData.model.startsWith("StudioDisplay")
+diff --git a/services/Screens.qml b/services/Screens.qml
+index ac26d27d..fecf2093 100644
+--- a/services/Screens.qml
++++ b/services/Screens.qml
+@@ -9,6 +9,6 @@ Singleton {
+     readonly property list<ShellScreen> screens: Quickshell.screens.filter(s => GlobalConfig.forScreen(s.name).enabled)
+ 
+     function isExcluded(screen: ShellScreen): bool {
+-        return !GlobalConfig.forScreen(screen.name).enabled;
++        return !GlobalConfig.forScreen(screen?.name ?? "").enabled;
+     }
+ }
