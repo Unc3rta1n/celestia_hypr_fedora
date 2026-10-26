@@ -55,6 +55,7 @@ A patch that no longer applies stops it before anything is installed. Rollback:
 12. cover art sticks per track (web players that resend metadata without it)
 13. toasts (layout switch, battery, ...) only on the monitor focused when they appear
 14. lockscreen on portrait monitors: box sized from the width, centre on top, side columns below
+15. keyboard layout toast: compact, one line with the layout name
 
 ## Keys
 

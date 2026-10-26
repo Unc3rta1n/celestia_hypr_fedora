@@ -1,0 +1,103 @@
+diff --git a/modules/utilities/toasts/ToastItem.qml b/modules/utilities/toasts/ToastItem.qml
+index 0b3a68ee..a7d65ecc 100644
+--- a/modules/utilities/toasts/ToastItem.qml
++++ b/modules/utilities/toasts/ToastItem.qml
+@@ -11,10 +11,13 @@ StyledRect {
+     id: root
+ 
+     required property Toast modelData
++    // keyboard layout toast: one line with just the layout name, sized to its text
++    readonly property bool compact: modelData.icon === "keyboard"
+ 
+-    anchors.left: parent.left
++    anchors.left: compact ? undefined : parent.left
+     anchors.right: parent.right
+-    implicitHeight: layout.implicitHeight + Tokens.padding.large
++    implicitWidth: layout.implicitWidth + Tokens.padding.medium * 2
++    implicitHeight: layout.implicitHeight + (compact ? Tokens.padding.small * 2 : Tokens.padding.large)
+ 
+     radius: Tokens.rounding.large
+     color: {
+@@ -51,10 +54,10 @@ StyledRect {
+         id: layout
+ 
+         anchors.fill: parent
+-        anchors.margins: Tokens.padding.small
++        anchors.margins: root.compact ? 0 : Tokens.padding.small
+         anchors.leftMargin: Tokens.padding.medium
+         anchors.rightMargin: Tokens.padding.medium
+-        spacing: Tokens.spacing.medium
++        spacing: root.compact ? Tokens.spacing.small : Tokens.spacing.medium
+ 
+         StyledRect {
+             radius: Tokens.rounding.large
+@@ -69,7 +72,7 @@ StyledRect {
+             }
+ 
+             implicitWidth: implicitHeight
+-            implicitHeight: icon.implicitHeight + Tokens.padding.large
++            implicitHeight: icon.implicitHeight + (root.compact ? Tokens.padding.small : Tokens.padding.large)
+ 
+             MaterialIcon {
+                 id: icon
+@@ -85,18 +88,19 @@ StyledRect {
+                         return Colours.palette.m3onError;
+                     return Colours.palette.m3onSurfaceVariant;
+                 }
+-                fontStyle: Tokens.font.icon.builders.large.scale(1.2).build()
++                fontStyle: root.compact ? Tokens.font.icon.builders.large.build() : Tokens.font.icon.builders.large.scale(1.2).build()
+             }
+         }
+ 
+         ColumnLayout {
+-            Layout.fillWidth: true
++            Layout.fillWidth: !root.compact
+             spacing: 0
+ 
+             StyledText {
+                 id: title
+ 
+                 Layout.fillWidth: true
++                visible: !root.compact
+                 text: Tr.trMarked(root.modelData.title)
+                 color: {
+                     if (root.modelData.type === Toast.Success)
+@@ -114,7 +118,11 @@ StyledRect {
+             StyledText {
+                 Layout.fillWidth: true
+                 textFormat: Text.StyledText
+-                text: Tr.trMarked(root.modelData.message)
++                text: {
++                    const msg = Tr.trMarked(root.modelData.message);
++                    // "Layout changed to: Russian" -> "Russian"
++                    return root.compact ? msg.slice(msg.lastIndexOf(":") + 1).trim() : msg;
++                }
+                 color: {
+                     if (root.modelData.type === Toast.Success)
+                         return Colours.palette.m3onSuccessContainer;
+@@ -124,7 +132,8 @@ StyledRect {
+                         return Colours.palette.m3onErrorContainer;
+                     return Colours.palette.m3onSurface;
+                 }
+-                opacity: 0.8
++                opacity: root.compact ? 1 : 0.8
++                font: root.compact ? Tokens.font.title.small : Tokens.font.body.small
+                 elide: Text.ElideRight
+             }
+         }
+diff --git a/modules/utilities/toasts/Toasts.qml b/modules/utilities/toasts/Toasts.qml
+index 4df36cf2..577c52a4 100644
+--- a/modules/utilities/toasts/Toasts.qml
++++ b/modules/utilities/toasts/Toasts.qml
+@@ -108,9 +108,10 @@ Item {
+             return y;
+         }
+ 
+-        anchors.left: parent.left
++        anchors.left: toastInner.compact ? undefined : parent.left
+         anchors.right: parent.right
+         anchors.bottom: parent.bottom
++        implicitWidth: toastInner.implicitWidth
+         implicitHeight: toastInner.implicitHeight
+ 
+         acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
