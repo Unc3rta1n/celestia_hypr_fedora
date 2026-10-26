@@ -103,20 +103,28 @@ index 76cc1039..b18e1825 100644
 +    }
  }
 diff --git a/modules/areapicker/Picker.qml b/modules/areapicker/Picker.qml
-index 68b49c39..3cf49b38 100644
+index 68b49c39..f702800d 100644
 --- a/modules/areapicker/Picker.qml
 +++ b/modules/areapicker/Picker.qml
-@@ -83,7 +83,13 @@ MouseArea {
+@@ -83,7 +83,21 @@ MouseArea {
      function save(): void {
          const tmpfile = Qt.resolvedUrl(`/tmp/caelestia-picker-${Quickshell.processId}-${Date.now()}.png`);
          CUtils.saveItem(screencopy, tmpfile, Qt.rect(Math.ceil(rsx), Math.ceil(rsy), Math.floor(sw), Math.floor(sh)), path => {
 -            if (root.loader.clipboardOnly) {
 +            if (root.loader.ocr) {
-+                // tesseract (rus+eng) -> clipboard; the notification shows what was recognised
-+                const script = 't=$(tesseract "$1" - -l rus+eng 2>/dev/null | tr -d "\\f"); rm -f "$1"; '
++                // OCR -> clipboard; the notification shows what was recognised. screen-ocr (RapidOCR,
++                // ~/.config/hypr/scripts) reads small screen text that tesseract garbles ("nttp:/Avww").
++                // It takes a few seconds: a "recognising" notification stays up until then and is closed
++                // before the result is sent (a replace would land in an already hidden popup).
++                // Falls back to tesseract when its venv isn't installed.
++                const script = 'id=$(notify-send -p -t 30000 -a caelestia-cli -u low -i edit-find "$4"); '
++                    + 't=$("$HOME/.config/hypr/scripts/screen-ocr" "$1" 2>/dev/null) '
++                    + '|| t=$(tesseract "$1" - -l rus+eng 2>/dev/null | tr -d "\\f"); rm -f "$1"; '
++                    + 'gdbus call --session --dest org.freedesktop.Notifications --object-path /org/freedesktop/Notifications '
++                    + '--method org.freedesktop.Notifications.CloseNotification "$id" >/dev/null 2>&1; '
 +                    + 'if [ -n "$t" ]; then printf "%s" "$t" | wl-copy; notify-send -a caelestia-cli -i edit-copy "$2" "$t"; '
 +                    + 'else notify-send -a caelestia-cli -u low "$3"; fi';
-+                Quickshell.execDetached(["sh", "-c", script, "sh", path, Tr.tr("Text copied"), Tr.tr("No text recognised")]);
++                Quickshell.execDetached(["sh", "-c", script, "sh", path, Tr.tr("Text copied"), Tr.tr("No text recognised"), Tr.tr("Recognising text…")]);
 +            } else if (root.loader.clipboardOnly) {
                  // Copy + keep a file in ~/Pictures/Screenshots; clicking the notification opens swappy
                  const script = 'f="$HOME/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"; mkdir -p "${f%/*}"; cp "$1" "$f"; '

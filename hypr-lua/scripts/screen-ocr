@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# screen-ocr IMAGE -> recognised text (Russian + English). See screen-ocr.py.
+# Exits non-zero when the venv is missing, so callers can fall back to tesseract.
+VENV=${XDG_DATA_HOME:-$HOME/.local/share}/screen-ocr/venv
+[[ -x $VENV/bin/python ]] || { echo "screen-ocr: no venv at $VENV (run install-caelestia.sh)" >&2; exit 127; }
+exec "$VENV/bin/python" -I "$(dirname "$(readlink -f "$0")")/screen-ocr.py" "$@"

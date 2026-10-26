@@ -114,6 +114,27 @@ sudo cmake --install "$BUILD/shell/build"
 step "caelestia-cli @ ${CLI_REV:0:8} (uv tool)"
 uv tool install --force --python 3.14 "git+https://github.com/caelestia-dots/cli@${CLI_REV}"
 
+step "screen OCR (RapidOCR venv for scripts/screen-ocr, used by the area picker's OCR mode)"
+# tesseract misread small light-on-dark screen text ("https://www" -> "nttp:/Avww"); ~360 MB, no sudo
+OCR_VENV=${XDG_DATA_HOME:-$HOME/.local/share}/screen-ocr/venv
+OCR_PKGS=(rapidocr==3.10.0 onnxruntime==1.31.0)
+OCR_DONE=$OCR_VENV/.done-$(IFS=_; echo "${OCR_PKGS[*]}")
+if [[ -e $OCR_DONE ]]; then
+    printf '\033[1;32m==> screen-ocr venv up to date, skipping\033[0m\n'
+else
+    uv venv -q --clear --python 3.13 "$OCR_VENV"
+    VIRTUAL_ENV=$OCR_VENV uv pip install -q "${OCR_PKGS[@]}"
+    # models are downloaded on first use: run once on a generated image so the first OCR is not slow
+    "$OCR_VENV/bin/python" -I -c '
+import sys, tempfile, cv2, numpy as np
+img = np.full((60, 400, 3), 255, np.uint8)
+cv2.putText(img, "Test 123 OCR", (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
+f = tempfile.NamedTemporaryFile(suffix=".png", delete=False).name
+cv2.imwrite(f, img)
+print(f)' | xargs -I{} sh -c '"$1" "$2" && rm -f "$2"' sh "$(realpath "$(dirname "$0")")/hypr-lua/scripts/screen-ocr" {}
+    touch "$OCR_DONE"
+fi
+
 step "swappy (patched: shortcuts work on non-latin layouts) -> ~/.local/bin"
 if ! done_or swappy; then
 clone https://github.com/jtheoof/swappy "$BUILD/swappy" v1.5.1
