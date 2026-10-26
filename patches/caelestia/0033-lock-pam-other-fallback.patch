@@ -1,0 +1,10 @@
+diff --git a/assets/pam.d/other b/assets/pam.d/other
+new file mode 100644
+index 0000000000..b69f72b388
+--- /dev/null
++++ b/assets/pam.d/other
+@@ -0,0 +1,4 @@
++#%PAM-1.0
++
++auth    required    pam_deny.so
++account required    pam_deny.so
