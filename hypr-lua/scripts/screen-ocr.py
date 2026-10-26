@@ -4,15 +4,20 @@ Prints the recognised text. Run through ./screen-ocr (the venv lives in ~/.local
 created by install-caelestia.sh).
 
 Tesseract is trained on scans: on small light-on-dark screen text it read "https://www" as
-"nttp:/Avww". Here the East Slavic model finds and reads every box; boxes with no Cyrillic-only
-letters are re-read in one batch by the Latin model (it gets URLs right where the Cyrillic one
-fumbles). Look-alike letters inside a word are folded into the word's script ("ForРost" ->
-"ForPost") and boxes on the same row are joined, so table rows stay rows.
+"nttp:/Avww". Here the East Slavic model finds and reads every box. One batched pass of the Latin
+model then re-reads boxes with no Cyrillic-only letters (it gets URLs right where the Cyrillic one
+fumbles) and, inside Russian text, the words that are Latin misread as Cyrillic: mixed-script words
+("Fедога") and words with "і", which Russian doesn't use ("таіп" for "main"). Plain Russian words
+are left alone: the Latin model reads "от" as "OT" just as confidently. Look-alike letters are
+folded into each word's script ("ForРost" -> "ForPost", "піх" -> "nix") and boxes on the same row
+are joined, so table rows stay rows.
 """
 
+import re
 import sys
 
 import cv2
+import numpy as np
 from rapidocr import LangRec, ModelType, OCRVersion, RapidOCR
 from rapidocr.ch_ppocr_rec import TextRecInput
 
@@ -50,15 +55,30 @@ def anchors(text: str) -> tuple[int, int]:
     )
 
 
-def fold_word(word: str) -> str:
-    cyr = sum(ch in CYR for ch in word)
-    lat = sum(is_lat(ch) for ch in word)
-    if not cyr or not lat:
-        return word
-    acyr, alat = anchors(word)
+def fold_part(part: str) -> str:
+    cyr = sum(ch in CYR for ch in part)
+    lat = sum(is_lat(ch) for ch in part)
+    if not lat:
+        # "піх": only look-alikes and an "і", which Russian doesn't have -> Latin read as Cyrillic
+        if "і" in part.lower() and all(ch in TO_LAT for ch in part):
+            return "".join(TO_LAT[ch] for ch in part)
+        return part
+    if not cyr:
+        return part
+    acyr, alat = anchors(part)
     to_cyr = acyr > alat if acyr != alat else cyr > lat
     table = TO_CYR if to_cyr else TO_LAT
-    return "".join(table.get(ch, ch) for ch in word)
+    return "".join(table.get(ch, ch) for ch in part)
+
+
+def fold_word(word: str) -> str:
+    # per letter run, so "піх-флейка" folds "піх" and "флейка" separately
+    return "".join(fold_part(p) for p in re.split(r"([\W\d_]+)", word))
+
+
+def suspicious(word: str) -> bool:
+    """A Latin word misread by the Cyrillic model: mixed scripts or an "і"."""
+    return "і" in word.lower() or (any(ch in CYR for ch in word) and any(is_lat(ch) for ch in word))
 
 
 def mostly_latin(text: str) -> bool:
@@ -66,31 +86,67 @@ def mostly_latin(text: str) -> bool:
     return acyr == 0 and alat > 0
 
 
+def better_latin(word: str, text: str, score: float) -> bool:
+    """The Latin re-read of a suspicious word: plain ASCII, confident, about as long, same case.
+
+    The case check rejects Russian words that were merely misread with a Latin letter: "oт" (Latin o)
+    comes back as "OT", while a real Latin word keeps its case ("Fедога" -> "Fedora"). Lengths may
+    differ by one (the Cyrillic model read "Operline" as "Орегіпе"); then only the first letter counts.
+    """
+    if not (text.isascii() and any(ch.isalpha() for ch in text) and score >= 0.9):
+        return False
+    if len(text) == len(word):
+        pairs = zip(word, text, strict=True)
+    elif abs(len(text) - len(word)) == 1:
+        pairs = zip([c for c in word if c.isalpha()][:1], [c for c in text if c.isalpha()][:1], strict=False)
+    else:
+        return False
+    return all(a.isupper() == b.isupper() for a, b in pairs if a.isalpha() and b.isalpha())
+
+
+def bounds(box: list) -> tuple[float, float, float, float]:
+    xs, ys = [p[0] for p in box], [p[1] for p in box]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def crop(img: np.ndarray, box: list) -> np.ndarray:
+    x0, y0, x1, y1 = bounds(box)
+    return img[max(int(y0) - 2, 0) : int(y1) + 2, max(int(x0) - 2, 0) : int(x1) + 2]
+
+
 def recognise(path: str) -> list[list]:
     """[x0, y0, y1, text] per text box."""
-    res = RapidOCR(params=ESLAV)(path)
+    res = RapidOCR(params=ESLAV)(path, return_word_box=True)
     if res.boxes is None:
         return []
 
     img = cv2.imread(path)
-    boxes, latin_idx, crops = [], [], []
-    for box, text in zip(res.boxes, res.txts, strict=True):
-        xs, ys = [p[0] for p in box], [p[1] for p in box]
-        x0, y0, x1, y1 = min(xs), min(ys), max(xs), max(ys)
-        if mostly_latin(text):
-            latin_idx.append(len(boxes))
-            crops.append(img[max(int(y0) - 2, 0) : int(y1) + 2, max(int(x0) - 2, 0) : int(x1) + 2])
-        boxes.append([x0, y0, y1, text])
+    # One batched Latin pass: whole boxes without Cyrillic-only letters + suspicious words of the rest
+    lines, jobs, crops = [], [], []
+    for i, (box, text, words) in enumerate(zip(res.boxes, res.txts, res.word_results, strict=True)):
+        x0, y0, _, y1 = bounds(box)
+        if mostly_latin(text) or not words:
+            jobs.append((i, None))
+            crops.append(crop(img, box))
+            lines.append([x0, y0, y1, [text]])
+            continue
+        for j, (word, _, wbox) in enumerate(words):
+            if suspicious(word):
+                jobs.append((i, j))
+                crops.append(crop(img, wbox))
+        lines.append([x0, y0, y1, [w for w, *_ in words]])
 
     if crops:
         rec = RapidOCR(params=COMMON)._load_rec_model()
-        for k, text in zip(latin_idx, rec(TextRecInput(img=crops)).txts, strict=True):
-            if text:
-                boxes[k][3] = text
+        out = rec(TextRecInput(img=crops))
+        for (i, j), text, lscore in zip(jobs, out.txts, out.scores, strict=True):
+            if j is None:
+                if text:
+                    lines[i][3] = [text]
+            elif better_latin(lines[i][3][j], text, lscore):
+                lines[i][3][j] = text
 
-    for b in boxes:
-        b[3] = " ".join(fold_word(w) for w in b[3].split(" "))
-    return boxes
+    return [[x0, y0, y1, " ".join(fold_word(w) for w in " ".join(ws).split(" "))] for x0, y0, y1, ws in lines]
 
 
 def join_rows(boxes: list[list]) -> str:
