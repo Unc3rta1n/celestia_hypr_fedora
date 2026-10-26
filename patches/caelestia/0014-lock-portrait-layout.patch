@@ -1,0 +1,107 @@
+diff --git a/modules/lock/Content.qml b/modules/lock/Content.qml
+index 0d47502a..26ed1b34 100644
+--- a/modules/lock/Content.qml
++++ b/modules/lock/Content.qml
+@@ -4,25 +4,35 @@ import Caelestia.Config
+ import qs.components
+ import qs.services
+ 
+-RowLayout {
++// Landscape: [weather/fetch/media] [center] [resources/notifs] in one row.
++// Portrait: center on top across both columns, the side columns below it.
++GridLayout {
+     id: root
+ 
+     required property var lock
++    readonly property bool portrait: lock.portrait
++    // height the side columns get; weather/fetch pick their detail level from it
++    readonly property real sideHeight: portrait ? height / 2 : height
+ 
+-    spacing: Tokens.spacing.largeIncreased * 2
++    columns: portrait ? 2 : 3
++    columnSpacing: Tokens.spacing.largeIncreased * 2
++    rowSpacing: Tokens.spacing.largeIncreased
+ 
+     ColumnLayout {
++        Layout.row: root.portrait ? 1 : 0
++        Layout.column: 0
+         Layout.fillWidth: true
++        Layout.fillHeight: true
+         spacing: Tokens.spacing.medium
+ 
+         WeatherInfo {
+             Layout.fillWidth: true
+-            rootHeight: root.height
++            rootHeight: root.sideHeight
+         }
+ 
+         Fetch {
+             Layout.fillWidth: true
+-            rootHeight: root.height
++            rootHeight: root.sideHeight
+         }
+ 
+         Media {
+@@ -33,11 +43,19 @@ RowLayout {
+     }
+ 
+     Center {
++        Layout.row: 0
++        Layout.column: root.portrait ? 0 : 1
++        Layout.columnSpan: root.portrait ? 2 : 1
++        Layout.alignment: Qt.AlignHCenter
++        Layout.fillHeight: !root.portrait
+         lock: root.lock
+     }
+ 
+     ColumnLayout {
++        Layout.row: root.portrait ? 1 : 0
++        Layout.column: root.portrait ? 1 : 2
+         Layout.fillWidth: true
++        Layout.fillHeight: true
+         spacing: Tokens.spacing.medium
+ 
+         Resources {
+diff --git a/modules/lock/LockSurface.qml b/modules/lock/LockSurface.qml
+index 782cb717..8751d3aa 100644
+--- a/modules/lock/LockSurface.qml
++++ b/modules/lock/LockSurface.qml
+@@ -17,6 +17,12 @@ WlSessionLockSurface {
+ 
+     readonly property alias unlocking: unlockAnim.running
+ 
++    // Portrait monitors: the landscape box (height * ratio) is wider than the screen, so size it
++    // from the width instead and let Content stack its columns
++    readonly property bool portrait: (screen?.height ?? 0) > (screen?.width ?? 0)
++    readonly property real boxWidth: portrait ? (screen?.width ?? 0) * 0.9 : (screen?.height ?? 0) * Tokens.sizes.lock.heightMult * Tokens.sizes.lock.ratio
++    readonly property real boxHeight: portrait ? (screen?.height ?? 0) * 0.8 : (screen?.height ?? 0) * Tokens.sizes.lock.heightMult
++
+     contentItem.Config.screen: screen.name
+     contentItem.Tokens.screen: screen.name
+ 
+@@ -145,12 +151,12 @@ WlSessionLockSurface {
+                 Anim {
+                     target: lockContent
+                     property: "implicitWidth"
+-                    to: (root.screen?.height ?? 0) * lockContent.Tokens.sizes.lock.heightMult * lockContent.Tokens.sizes.lock.ratio
++                    to: root.boxWidth
+                 }
+                 Anim {
+                     target: lockContent
+                     property: "implicitHeight"
+-                    to: (root.screen?.height ?? 0) * lockContent.Tokens.sizes.lock.heightMult
++                    to: root.boxHeight
+                 }
+             }
+         }
+@@ -237,8 +243,8 @@ WlSessionLockSurface {
+             id: content
+ 
+             anchors.centerIn: parent
+-            width: (root.screen?.height ?? 0) * Tokens.sizes.lock.heightMult * Tokens.sizes.lock.ratio - Tokens.padding.extraLargeIncreased
+-            height: (root.screen?.height ?? 0) * Tokens.sizes.lock.heightMult - Tokens.padding.extraLargeIncreased
++            width: root.boxWidth - Tokens.padding.extraLargeIncreased
++            height: root.boxHeight - Tokens.padding.extraLargeIncreased
+ 
+             lock: root
+             opacity: 0
