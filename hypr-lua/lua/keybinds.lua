@@ -133,6 +133,7 @@ bind("CTRL + ALT + Delete", hl.dsp.exit(), "exit Hyprland")
 bind(M("code:24"), hl.dsp.window.close(), "close active window")                    -- Q
 bind(M("SHIFT + code:24"), exec(S .. "/KillActiveProcess.sh"), "Terminate active process") -- Q
 bind("CTRL + ALT + code:46", global("lock"), "lock screen (caelestia)")              -- L, was hyprlock
+bind(M("code:46"), global("lock"), "lock screen (caelestia)")                     -- L, like Win+L
 bind("CTRL + ALT + code:33", global("session"), "powermenu (caelestia)")            -- P, was wlogout
 
 ---------------------------------------------------------------- LAYOUTS
