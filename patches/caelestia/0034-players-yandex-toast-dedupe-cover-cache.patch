@@ -1,0 +1,117 @@
+diff --git a/services/Players.qml b/services/Players.qml
+index 5026014b..5705ce06 100644
+--- a/services/Players.qml
++++ b/services/Players.qml
+@@ -18,6 +18,8 @@ Singleton {
+ 
+     // Dedup key for progressive metadata (e.g. mpv-mpris/yt-dlp player fills title then artist later).
+     property string lastNowPlayingKey: ""
++    property real lastNowPlayingAt: 0
++    readonly property int nowPlayingRepeatFallback: 600000 // ms, players without a track length
+ 
+     function getIdentity(player: MprisPlayer): string {
+         if (!player)
+@@ -63,7 +65,8 @@ Singleton {
+ 
+     function upgradeArt(player: MprisPlayer, url: string): string {
+         artRevision; // re-evaluate bindings when a lookup finishes
+-        if (!url.includes("/firefox-mpris/"))
++        const yandex = (player.metadata["xesam:url"] ?? "").startsWith("https://music.yandex.");
++        if (!url.includes("/firefox-mpris/") && !(yandex && !url))
+             return url;
+         if (!player.trackArtist || !player.trackTitle)
+             return lastHiResByPlayer[player.identity] || url; // in-between "page title" update
+@@ -82,11 +85,17 @@ Singleton {
+         return upgradeArt(player, getRawArtUrl(player));
+     }
+ 
++    function rememberArt(player: MprisPlayer): void {
++        if (!player.trackArtUrl)
++            return;
++        artByTrack[`${player.identity}|${player.trackArtist}|${player.trackTitle}`] = player.trackArtUrl;
++        lastArtByPlayer[player.identity] = player.trackArtUrl;
++    }
++
+     function getRawArtUrl(player: MprisPlayer): string {
+         const trackKey = `${player.identity}|${player.trackArtist}|${player.trackTitle}`;
+         if (player.trackArtUrl) {
+-            artByTrack[trackKey] = player.trackArtUrl;
+-            lastArtByPlayer[player.identity] = player.trackArtUrl;
++            rememberArt(player);
+             return player.trackArtUrl;
+         }
+         if (artByTrack[trackKey])
+@@ -106,6 +115,9 @@ Singleton {
+     // Quickshell only emits postTrackChanged when trackid/url/title change, so late
+     // artist updates (common with mpv-mpris + yt-dlp player) never retrigger it. Watch
+     // title/artist too and toast once both are usable.
++    // Yandex Music in Firefox flips the metadata to the page title and back 2-3 times per track
++    // (each flip is a new uniqueId) and Firefox briefly shows other tabs' media in between, so
++    // wait for the metadata to settle and don't repeat a track within its own length.
+     function maybeToastNowPlaying(): void {
+         if (!GlobalConfig.utilities.toasts.nowPlaying)
+             return;
+@@ -119,32 +131,58 @@ Singleton {
+         if (!title || !artist)
+             return;
+ 
+-        const key = `${getIdentity(player)}\0${player.uniqueId}\0${title}\0${artist}`;
+-        if (key === lastNowPlayingKey)
++        const key = `${getIdentity(player)}\0${title}\0${artist}`;
++        const now = Date.now();
++        const repeatAfter = player.lengthSupported && player.length > 0 ? player.length * 1000 : nowPlayingRepeatFallback;
++        if (key === lastNowPlayingKey && now - lastNowPlayingAt < repeatAfter)
+             return;
+ 
+         lastNowPlayingKey = key;
++        lastNowPlayingAt = now;
+         Toaster.toast(Tr.tr("Now playing"), Tr.trCtx("%1 - %2", "track artist and title").arg(artist).arg(title), "music_note");
+     }
+ 
+     onActiveChanged: lastNowPlayingKey = ""
+ 
++    Timer {
++        id: nowPlayingSettle
++
++        interval: 800
++        onTriggered: root.maybeToastNowPlaying()
++    }
++
+     Connections {
+         function onPostTrackChanged(): void {
+-            root.maybeToastNowPlaying();
++            nowPlayingSettle.restart();
+         }
+ 
+         function onTrackTitleChanged(): void {
+-            root.maybeToastNowPlaying();
++            nowPlayingSettle.restart();
+         }
+ 
+         function onTrackArtistChanged(): void {
+-            root.maybeToastNowPlaying();
++            nowPlayingSettle.restart();
+         }
+ 
+         target: root.active
+     }
+ 
++    // The art arrives in one or two of the metadata updates only, so remember it even when nothing
++    // showing the cover is open (bindings calling getArtUrl only exist while it's on screen).
++    Instantiator {
++        model: Mpris.players
++
++        delegate: Connections {
++            required property MprisPlayer modelData
++
++            function onTrackArtUrlChanged(): void {
++                root.rememberArt(modelData);
++            }
++
++            target: modelData
++        }
++    }
++
+     PersistentProperties {
+         id: props
+ 
