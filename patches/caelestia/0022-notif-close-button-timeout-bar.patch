@@ -1,0 +1,77 @@
+diff --git a/modules/notifications/Notification.qml b/modules/notifications/Notification.qml
+index 6bbf654b..e6020b1e 100644
+--- a/modules/notifications/Notification.qml
++++ b/modules/notifications/Notification.qml
+@@ -40,6 +40,32 @@ StyledRect {
+         }
+     }
+ 
++    // Time left before the popup hides: restarts with the timer (hover stops it, leaving restarts it)
++    property real timeLeft: 1
++
++    NumberAnimation on timeLeft {
++        running: root.modelData.timer.running && (GlobalConfig.notifs.expire || root.modelData.hasFullscreen)
++        from: 1
++        to: 0
++        duration: root.modelData.timer.interval
++    }
++
++    // Inside the bottom padding: the popup list cuts the last ~5 px of the last card
++    // (Wrapper/Content -5/+5 offset), a bar on the very edge would be invisible there
++    StyledRect {
++        z: 1
++        anchors.left: parent.left
++        anchors.bottom: parent.bottom
++        anchors.leftMargin: Tokens.padding.medium
++        anchors.bottomMargin: 6
++
++        visible: GlobalConfig.notifs.expire && root.timeLeft > 0
++        implicitWidth: (root.width - Tokens.padding.medium * 2) * root.timeLeft
++        implicitHeight: 3
++        radius: Tokens.rounding.full
++        color: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3secondary : Colours.palette.m3primary
++    }
++
+     MouseArea {
+         property int startY
+ 
+@@ -360,12 +386,38 @@ StyledRect {
+             }
+ 
+             Item {
+-                id: expandBtn
++                id: closeBtn
+ 
+                 anchors.right: parent.right
+                 anchors.top: parent.top
+                 anchors.topMargin: -Tokens.padding.extraSmall
+ 
++                implicitWidth: closeIcon.implicitHeight
++                implicitHeight: closeIcon.implicitHeight
++
++                // Hide the popup; the notification stays in the sidebar (middle click removes it)
++                StateLayer {
++                    radius: Tokens.rounding.full
++                    color: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
++                    onClicked: root.modelData.popup = false
++                }
++
++                MaterialIcon {
++                    id: closeIcon
++
++                    anchors.centerIn: parent
++                    text: "close"
++                    fontStyle: Tokens.font.icon.medium
++                }
++            }
++
++            Item {
++                id: expandBtn
++
++                anchors.right: closeBtn.left
++                anchors.top: parent.top
++                anchors.topMargin: -Tokens.padding.extraSmall
++
+                 implicitWidth: expandIcon.implicitHeight
+                 implicitHeight: expandIcon.implicitHeight
+ 
