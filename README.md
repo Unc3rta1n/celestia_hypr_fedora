@@ -53,6 +53,7 @@ A patch that no longer applies stops it before anything is installed. Rollback:
 10. tray menus show checkbox / radio state
 11. bar: media entry (play/pause, wheel = next/prev) + hover popout with cover, title, progress, controls
 12. cover art sticks per track (web players that resend metadata without it)
+13. toasts (layout switch, battery, ...) only on the monitor focused when they appear
 
 ## Keys
 

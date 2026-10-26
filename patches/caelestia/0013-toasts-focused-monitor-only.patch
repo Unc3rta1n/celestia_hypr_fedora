@@ -1,0 +1,62 @@
+diff --git a/modules/drawers/Panels.qml b/modules/drawers/Panels.qml
+index 28a03564..599e3b4f 100644
+--- a/modules/drawers/Panels.qml
++++ b/modules/drawers/Panels.qml
+@@ -137,6 +137,8 @@ Item {
+     Toasts.Toasts {
+         id: toasts
+ 
++        screen: root.screen
++
+         anchors.bottom: sidebar.visible ? parent.bottom : utilities.top
+         anchors.right: sidebar.left
+         anchors.margins: Tokens.padding.medium
+diff --git a/modules/utilities/toasts/Toasts.qml b/modules/utilities/toasts/Toasts.qml
+index 4f6cef18..4df36cf2 100644
+--- a/modules/utilities/toasts/Toasts.qml
++++ b/modules/utilities/toasts/Toasts.qml
+@@ -10,9 +10,24 @@ import qs.services
+ Item {
+     id: root
+ 
++    required property ShellScreen screen
+     readonly property int spacing: Tokens.spacing.small
+     property bool flag
+ 
++    // Each toast belongs to the monitor focused when it appeared (no copies on every screen,
++    // no jumping when focus moves while it is shown). Lists are only appended to, never reassigned.
++    property var seenToasts: []
++    property var ownToasts: []
++
++    function isOwn(toast: Toast): bool {
++        if (!seenToasts.includes(toast)) {
++            seenToasts.push(toast);
++            if (Hypr.focusedMonitor?.name === screen?.name)
++                ownToasts.push(toast);
++        }
++        return ownToasts.includes(toast);
++    }
++
+     function shouldShowToast(toast: Toast): bool {
+         if (!Notifs.hasFullscreen())
+             return true;
+@@ -42,7 +57,7 @@ Item {
+                 const toasts = [];
+                 let count = 0;
+                 for (const toast of Toaster.toasts) {
+-                    if (!root.shouldShowToast(toast))
++                    if (!root.isOwn(toast) || !root.shouldShowToast(toast))
+                         continue;
+                     toasts.push(toast);
+                     if (!toast.closed) {
+@@ -67,8 +82,9 @@ Item {
+ 
+         readonly property bool previewHidden: {
+             let extraHidden = 0;
++            const shown = repeater.model.values; // this screen's toasts, not all of Toaster.toasts
+             for (let i = 0; i < index; i++)
+-                if (Toaster.toasts[i].closed)
++                if (shown[i].closed)
+                     extraHidden++;
+             return index >= Config.utilities.maxToasts + extraHidden;
+         }
