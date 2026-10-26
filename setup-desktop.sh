@@ -35,9 +35,10 @@ if grep -q 'zoxide init zsh' "$z" && [[ $(grep -v '^\s*\(#.*\)\?$' "$z" | tail -
     printf '\n# zoxide must be initialised last (its doctor warns otherwise)\neval "$(zoxide init zsh)"\n' >>"$z"
 fi
 
-step "Qt font (qt6ct)"
+step "Qt font + icons (qt6ct): icons as in KDE apps (KoolDots' Flat-Remix theme isn't installed)"
 q=$HOME/.config/qt6ct/qt6ct.conf
 [[ -e $q ]] && set_line "$q" '^general=' 'general="Noto Sans,11,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,Regular"'
+[[ -e $q ]] && set_line "$q" '^icon_theme=' 'icon_theme=breeze-dark'
 
 step "cursor: gruvbox-light 28 everywhere (XCursor rebuilt from hyprcursor for XWayland/GTK/Electron)"
 for t in "$HOME"/.icons/gruvbox-light "$HOME"/.icons/gruvbox-dark; do
