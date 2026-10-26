@@ -117,8 +117,9 @@ section("Tools")
 bind("CTRL + ALT + code:25", exec("caelestia wallpaper -r " .. v.wallDIR), "random wallpaper") -- W, was swww WallpaperRandom
 bind(M("CTRL + code:32"), hl.dsp.window.set_prop({ prop = "opaque", value = "toggle" }), "toggle active window opacity") -- O
 bind(M("ALT + code:54"), launcher_with(">calc "), "calculator (caelestia)") -- C, was RofiCalc
--- one switch for all devices; caelestia shows a single toast (KeyboardLayout.sh notified per press -> flood)
-bind("Hyper_L", exec("hyprctl switchxkblayout all next"), "switch keyboard layout globally", { locked = true, non_consuming = true })
+-- one switch for all devices, kept in sync (see the script); caelestia shows a single toast
+-- (KeyboardLayout.sh notified per press -> flood)
+bind("Hyper_L", exec(S .. "/kb-layout-next"), "switch keyboard layout globally", { locked = true, non_consuming = true })
 
 section("Workspaces")
 -- Move current workspace to monitor (left right up down)

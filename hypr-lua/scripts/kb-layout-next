@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Next keyboard layout on ALL devices at once, kept in sync.
+# `switchxkblayout all next` cycles each device on its own, so a device that got out of step
+# (e.g. Bluetooth earbuds exposed as an AVRCP "keyboard") stays inverted forever, and when it
+# becomes `main` caelestia's toast shows its layout instead of the real one.
+# Takes the layout most keyboards are on and sets the next one on every device.
+set -euo pipefail
+
+read -r idx count < <(hyprctl devices -j | jq -r '
+    .keyboards
+    | [(group_by(.active_layout_index) | max_by(length) | .[0].active_layout_index),
+       (.[0].layout | split(",") | length)]
+    | @tsv')
+
+hyprctl switchxkblayout all $(( (idx + 1) % count )) >/dev/null
