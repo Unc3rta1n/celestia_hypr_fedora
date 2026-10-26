@@ -73,6 +73,7 @@ A patch that no longer applies stops it before anything is installed. Rollback:
 15. keyboard layout toast: compact, one line with the layout name
 16. Firefox covers (40x40 from Yandex Music) replaced by the 600x600 cover from the Yandex Music catalogue
 17. wallpaper picker (Super+W) opens on a random wallpaper instead of the current one
+18. notification popups (screenshots, Telegram, sites, ...) only on the monitor focused when they appear
 
 ## Keys
 

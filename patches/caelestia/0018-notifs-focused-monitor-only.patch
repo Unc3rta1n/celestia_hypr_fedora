@@ -1,0 +1,78 @@
+diff --git a/modules/drawers/Panels.qml b/modules/drawers/Panels.qml
+index 599e3b4f..592184eb 100644
+--- a/modules/drawers/Panels.qml
++++ b/modules/drawers/Panels.qml
+@@ -64,6 +64,7 @@ Item {
+     Notifications.Wrapper {
+         id: notifications
+ 
++        screen: root.screen
+         screenState: root.screenState
+         sidebarPanel: sidebar
+         osdPanel: osdWrapper
+diff --git a/modules/notifications/Content.qml b/modules/notifications/Content.qml
+index 94d7ea30..d315c1a8 100644
+--- a/modules/notifications/Content.qml
++++ b/modules/notifications/Content.qml
+@@ -14,6 +14,7 @@ import qs.modules.utilities as Utilities
+ Item {
+     id: root
+ 
++    required property ShellScreen screen
+     required property ScreenState screenState
+     required property Item osdPanel
+     required property Item sessionPanel
+@@ -21,6 +22,20 @@ Item {
+     readonly property int padding: Tokens.padding.large
+     readonly property int clampedPadding: CUtils.clamp(padding - Config.border.thickness, 0, padding)
+ 
++    // Each popup belongs to the monitor focused when it appeared (no copies on every screen,
++    // no jumping when focus moves while it is shown). Lists are only appended to, never reassigned.
++    property var seenPopups: []
++    property var ownPopups: []
++
++    function isOwn(notif: NotifData): bool {
++        if (!seenPopups.includes(notif)) {
++            seenPopups.push(notif);
++            if (Hypr.focusedMonitor?.name === screen?.name)
++                ownPopups.push(notif);
++        }
++        return ownPopups.includes(notif);
++    }
++
+     anchors.top: parent.top
+     anchors.bottom: parent.bottom
+     anchors.right: parent.right
+@@ -69,7 +84,7 @@ Item {
+             id: list
+ 
+             model: ScriptModel {
+-                values: Notifs.popups.filter(n => !n.closed)
++                values: Notifs.popups.filter(n => !n.closed && root.isOwn(n))
+             }
+ 
+             anchors.fill: parent
+diff --git a/modules/notifications/Wrapper.qml b/modules/notifications/Wrapper.qml
+index c048e764..cbfac06b 100644
+--- a/modules/notifications/Wrapper.qml
++++ b/modules/notifications/Wrapper.qml
+@@ -1,9 +1,11 @@
+ import QtQuick
++import Quickshell
+ import qs.components
+ 
+ Item {
+     id: root
+ 
++    required property ShellScreen screen
+     required property ScreenState screenState
+     required property Item sidebarPanel
+     property alias osdPanel: content.osdPanel
+@@ -19,6 +21,7 @@ Item {
+         id: content
+ 
+         anchors.topMargin: -root.anchors.topMargin
++        screen: root.screen
+         screenState: root.screenState
+     }
+ }
