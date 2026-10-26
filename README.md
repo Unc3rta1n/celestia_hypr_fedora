@@ -75,6 +75,11 @@ A patch that no longer applies stops it before anything is installed. Rollback:
 17. wallpaper picker (Super+W) opens on a random wallpaper instead of the current one
 18. notification popups (screenshots, Telegram, sites, ...) only on the monitor focused when they appear
 19. bar popouts: macOS-style safe triangle, moving diagonally to the open menu doesn't switch it to the icons on the way
+20. bar popouts: input mask follows where the popout is going, so moving onto it while it slides/grows doesn't close it (upstream PR #1747)
+21. lockscreen: Ctrl+U clears the password (upstream PR #2159)
+22. notification popups: close button (hides the popup, keeps it in the sidebar) and a bar showing the time left
+23. monitor unplug/replug: null guards for dangling screens, so the drawers layer no longer swallows every click (upstream issue #1809)
+24. keyboard layout toast hides after 3 s (was 5 s, hardcoded in the plugin)
 
 ## Keys
 

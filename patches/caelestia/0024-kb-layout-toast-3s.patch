@@ -1,0 +1,14 @@
+diff --git a/plugin/src/Caelestia/Services/hyprdevices.cpp b/plugin/src/Caelestia/Services/hyprdevices.cpp
+index 0c372962..21507ac7 100644
+--- a/plugin/src/Caelestia/Services/hyprdevices.cpp
++++ b/plugin/src/Caelestia/Services/hyprdevices.cpp
+@@ -48,7 +48,8 @@ void toastKbLayout(const QString& layout) {
+ 
+     Toaster::instance()->toast(
+         // TRANSLATORS: %1 = an XKB keyboard layout name, e.g. English (US)
+-        mark(u"Keyboard layout changed"_s), mark(u"Layout changed to: %1"_s, { layout }), u"keyboard"_s);
++        mark(u"Keyboard layout changed"_s), mark(u"Layout changed to: %1"_s, { layout }), u"keyboard"_s,
++        Toast::Type::Info, 3000);
+ }
+ 
+ } // namespace

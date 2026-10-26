@@ -591,7 +591,8 @@
     }
   },
   "notifs": {
-    "actionOnClick": true
+    "actionOnClick": true,
+    "defaultExpireTimeout": 3000
   },
   "lock": {
     "hideNotifs": true
