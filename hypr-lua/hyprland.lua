@@ -1,6 +1,6 @@
 -- Hyprland Lua config (migrated from KoolDots hyprland.conf, 2026-10-25)
--- Old hyprlang files (*.conf, configs/, UserConfigs/) are kept for rollback:
--- delete/rename this file and Hyprland falls back to hyprland.conf.
+-- Old hyprlang files (hyprland.conf, configs/, most of UserConfigs/) are deleted; the rollback copy is
+-- ~/hypr-backup-2026-10-25.tar.gz and hypr/ in this repo.
 -- Each require() runs in its own scope: an error in one module doesn't stop the others.
 
 require("lua.env")
