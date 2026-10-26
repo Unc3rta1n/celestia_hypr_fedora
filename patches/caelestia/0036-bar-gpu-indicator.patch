@@ -1,0 +1,133 @@
+diff --git a/modules/bar/Bar.qml b/modules/bar/Bar.qml
+index af0e0c3f..5a9e4e12 100644
+--- a/modules/bar/Bar.qml
++++ b/modules/bar/Bar.qml
+@@ -202,6 +202,15 @@ ColumnLayout {
+                     PrivacyEntry {}
+                 }
+             }
++            DelegateChoice {
++                roleValue: "gpu"
++                delegate: EntryWrapper {
++                    // only takes space while the NVIDIA dGPU is doing something
++                    visible: GpuStats.busy
++
++                    GpuEntry {}
++                }
++            }
+             DelegateChoice {
+                 roleValue: "statusIcons"
+                 delegate: EntryWrapper {
+diff --git a/modules/bar/components/GpuEntry.qml b/modules/bar/components/GpuEntry.qml
+new file mode 100644
+index 00000000..fa35d5c4
+--- /dev/null
++++ b/modules/bar/components/GpuEntry.qml
+@@ -0,0 +1,52 @@
++pragma ComponentBehavior: Bound
++
++import QtQuick
++import QtQuick.Layouts
++import Caelestia.Config
++import qs.components
++import qs.services
++
++// Bar entry "gpu": NVIDIA dGPU load and temperature while it is busy (see services/GpuStats.qml).
++// The wrapper in Bar.qml hides it while the card idles.
++StyledRect {
++    id: root
++
++    readonly property int padding: Tokens.padding.small
++    readonly property bool hot: GpuStats.temp >= 80
++
++    implicitWidth: Tokens.sizes.bar.innerWidth
++    implicitHeight: layout.implicitHeight + root.padding * 2
++
++    color: Qt.alpha(hot ? Colours.palette.m3errorContainer : Colours.palette.m3secondaryContainer, 0.9)
++    radius: Tokens.rounding.full
++
++    ColumnLayout {
++        id: layout
++
++        anchors.centerIn: parent
++        spacing: Tokens.spacing.extraSmall
++
++        MaterialIcon {
++            Layout.alignment: Qt.AlignHCenter
++            text: "memory"
++            color: root.hot ? Colours.palette.m3onErrorContainer : Colours.palette.m3onSecondaryContainer
++            fill: 1
++        }
++
++        StyledText {
++            Layout.alignment: Qt.AlignHCenter
++            text: GpuStats.util + "%"
++            horizontalAlignment: Text.AlignHCenter
++            font: Tokens.font.mono.small
++            color: root.hot ? Colours.palette.m3onErrorContainer : Colours.palette.m3onSecondaryContainer
++        }
++
++        StyledText {
++            Layout.alignment: Qt.AlignHCenter
++            text: GpuStats.temp + "°"
++            horizontalAlignment: Text.AlignHCenter
++            font: Tokens.font.mono.small
++            color: root.hot ? Colours.palette.m3onErrorContainer : Colours.palette.m3onSecondaryContainer
++        }
++    }
++}
+diff --git a/services/GpuStats.qml b/services/GpuStats.qml
+new file mode 100644
+index 00000000..b42db1c4
+--- /dev/null
++++ b/services/GpuStats.qml
+@@ -0,0 +1,49 @@
++pragma Singleton
++
++import QtQuick
++import Quickshell
++import Quickshell.Io
++
++// NVIDIA dGPU load for the bar's "gpu" entry. nvidia-smi is only asked while the card is powered
++// (runtime_status), so a suspended dGPU is never woken up by the poll.
++Singleton {
++    id: root
++
++    readonly property string pciPath: "/sys/bus/pci/devices/0000:01:00.0/power/runtime_status"
++    readonly property int busyUtil: 5
++    readonly property int busyWatts: 8
++
++    property int util: 0
++    property int temp: 0
++    property real power: 0
++    readonly property bool busy: util >= busyUtil || power >= busyWatts
++
++    Process {
++        id: proc
++
++        command: ["sh", "-c", "grep -q active " + root.pciPath + " 2>/dev/null && "
++            + "nvidia-smi --query-gpu=utilization.gpu,temperature.gpu,power.draw --format=csv,noheader,nounits"]
++        stdout: StdioCollector {
++            onStreamFinished: {
++                const f = text.trim().split(",").map(s => parseFloat(s));
++                if (f.length === 3 && f.every(n => !isNaN(n))) {
++                    root.util = f[0];
++                    root.temp = f[1];
++                    root.power = f[2];
++                } else {
++                    root.util = 0;
++                    root.temp = 0;
++                    root.power = 0;
++                }
++            }
++        }
++    }
++
++    Timer {
++        interval: 3000
++        running: true
++        repeat: true
++        triggeredOnStart: true
++        onTriggered: proc.running = true
++    }
++}
