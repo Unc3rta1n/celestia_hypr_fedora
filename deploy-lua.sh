@@ -37,6 +37,7 @@ mkdir -p "$HOME/.local/share/color-schemes" && cp -n "$HERE"/CatppuccinMocha.col
 mkdir -p "$HOME/.config/caelestia"
 cp -n "$HERE"/caelestia/shell.json "$HOME/.config/caelestia/shell.json" || true
 cp -n "$HERE"/caelestia/cli.json "$HOME/.config/caelestia/cli.json" || true
+cp "$HERE"/caelestia/session.webp "$HOME/.config/caelestia/session.webp"  # session menu sticker (paths.sessionGif)
 
 # KDE apps (Dolphin...) follow the caelestia scheme: path unit re-renders on every scheme change
 mkdir -p "$HOME/.config/systemd/user"

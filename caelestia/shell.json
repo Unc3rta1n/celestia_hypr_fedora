@@ -1,6 +1,7 @@
 {
   "paths": {
-    "wallpaperDir": "~/Pictures/wallpapers"
+    "wallpaperDir": "~/Pictures/wallpapers",
+    "sessionGif": "~/.config/caelestia/session.webp"
   },
   "session": {
     "commands": {
