@@ -53,6 +53,7 @@ A patch that no longer applies stops it before anything is installed. Rollback:
 | `caelestia/` | `~/.config/caelestia/{shell,cli}.json` (copied only if missing) |
 | `systemd/` | `caelestia-kde-colors.path`: KDE apps follow the caelestia scheme; `caelestia-pywalfox.path`: Firefox follows it via Pywalfox (see below); `10-lid-suspend.conf`: lid suspends even with external monitors (installed by `setup-desktop.sh`) |
 | `vscode/` | caelestia's VS Code extension (theme "Caelestia") |
+| `zsh/` | shell setup copies: `zshrc` -> `~/.zshrc`, `extras.zsh` + `cheatsheet.txt` -> `~/.config/zsh/`, `starship.toml` -> `~/.config/`, `atuin-config.toml` -> `~/.config/atuin/config.toml`, `fastfetch-config-mini.jsonc` -> `~/.config/fastfetch/config-mini.jsonc` (see below) |
 
 ## Patches
 
@@ -105,3 +106,19 @@ Super+Ctrl+Shift+R pause.
 36. bar `gpu` entry: NVIDIA dGPU load % and temperature while it is busy (>=5 % or >=8 W); polled only while the card is runtime-active, so it is never woken
 37. now-playing toast shows the track cover instead of the music note (`ToastItem` renders the `icon` as an image when it is a file/http URL; `Players` passes `getArtUrl`)
 38. dashboard lyrics fallback: when LRCLIB finds nothing, `LyricList` shows plain lyrics from the Yandex Music catalogue (`Players.getLyrics`: search, then `/tracks/{id}/supplement`, no auth); untimed, so no highlight or click-to-seek
+
+## zsh
+
+oh-my-zsh with starship, atuin, fzf-tab, eza, bat and friends; `zh` (or F1) prints the cheatsheet of all binds and aliases.
+Install the tools and plugins first:
+
+```bash
+sudo dnf install -y starship eza atuin git-delta dust duf tealdeer direnv
+C=~/.oh-my-zsh/custom/plugins
+git clone --depth 1 https://github.com/Aloxaf/fzf-tab $C/fzf-tab
+git clone --depth 1 https://github.com/zsh-users/zsh-completions $C/zsh-completions
+git clone --depth 1 https://github.com/MichaelAquilina/zsh-you-should-use $C/you-should-use
+```
+
+Then copy the files as listed in the Layout table. `.zshrc` also sources `~/.config/zsh/win.zsh` (win10 VM helpers,
+not in the repo): drop that line on a machine without it.
