@@ -1,0 +1,62 @@
+diff --git a/services/Players.qml b/services/Players.qml
+index 80bca26e..5026014b 100644
+--- a/services/Players.qml
++++ b/services/Players.qml
+@@ -32,9 +32,57 @@ Singleton {
+     property var artByTrack: ({})
+     property var lastArtByPlayer: ({})
+ 
++    // Firefox hands MPRIS the first image of the page's mediaSession artwork, which on Yandex Music
++    // is 40x40. Look the track up in the Yandex Music catalogue (no auth needed) and use its cover.
++    property var hiResArt: ({}) // "artist|title" -> url, "" = not found, null = lookup running
++    property int artRevision: 0
++
++    function lookupHiResArt(key: string, artist: string, title: string): void {
++        hiResArt[key] = null;
++        const norm = s => s.toLowerCase().replace(/ё/g, "е").trim();
++        const xhr = new XMLHttpRequest();
++        xhr.onreadystatechange = () => {
++            if (xhr.readyState !== XMLHttpRequest.DONE)
++                return;
++            let found = "";
++            try {
++                const tracks = JSON.parse(xhr.responseText).result?.tracks?.results ?? [];
++                const wantArtist = norm(artist);
++                const match = tracks.find(t => t.coverUri && norm(t.title) === norm(title) && t.artists?.some(a => wantArtist.includes(norm(a.name))));
++                if (match)
++                    found = `https://${match.coverUri.replace("%%", "600x600")}`;
++            } catch (e) {}
++            hiResArt[key] = found;
++            artRevision++;
++        };
++        xhr.open("GET", `https://api.music.yandex.net/search?type=track&page=0&text=${encodeURIComponent(`${artist} ${title}`)}`);
++        xhr.send();
++    }
++
++    property var lastHiResByPlayer: ({})
++
++    function upgradeArt(player: MprisPlayer, url: string): string {
++        artRevision; // re-evaluate bindings when a lookup finishes
++        if (!url.includes("/firefox-mpris/"))
++            return url;
++        if (!player.trackArtist || !player.trackTitle)
++            return lastHiResByPlayer[player.identity] || url; // in-between "page title" update
++        const key = `${player.trackArtist}|${player.trackTitle}`;
++        if (!(key in hiResArt))
++            lookupHiResArt(key, player.trackArtist, player.trackTitle);
++        if (!hiResArt[key])
++            return url;
++        lastHiResByPlayer[player.identity] = hiResArt[key];
++        return hiResArt[key];
++    }
++
+     function getArtUrl(player: MprisPlayer): string {
+         if (!player)
+             return "";
++        return upgradeArt(player, getRawArtUrl(player));
++    }
++
++    function getRawArtUrl(player: MprisPlayer): string {
+         const trackKey = `${player.identity}|${player.trackArtist}|${player.trackTitle}`;
+         if (player.trackArtUrl) {
+             artByTrack[trackKey] = player.trackArtUrl;
