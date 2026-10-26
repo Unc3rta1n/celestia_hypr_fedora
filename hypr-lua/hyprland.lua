@@ -12,6 +12,7 @@ require("lua.windowrules")
 require("lua.keybinds")
 require("lua.layout")   -- after keybinds: per-layout SUPER+J/K/O/arrows
 require("lua.autostart")
+require("lua.screenshare_dnd") -- do not disturb while the screen is shared
 
 -- nwg-displays output (it writes monitors.lua / workspaces.lua itself)
 require("monitors")

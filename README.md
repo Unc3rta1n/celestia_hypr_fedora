@@ -86,9 +86,11 @@ A patch that no longer applies stops it before anything is installed. Rollback:
 28. screen recorder: the bar timer starts once the area is picked, not while slurp is waiting
 29. battery popout: no "Performance degraded / too hot" banner (tuned-ppd raises it whenever power-saver is on)
 30. area picker QR mode (`caelestia:qr`, zbarimg -> clipboard; clicking the notification opens a link)
+31. bar `privacy` entry: mic / camera icons while an app uses them (PipeWire capture streams, `fuser /dev/video*`)
 
 Outside the shell: `lua/workspace_home.lua` moves workspaces back to their monitor (rules from
-`workspaces.lua`) when it is plugged in again; `caelestia-upstream-check.timer` checks weekly whether
+`workspaces.lua`) when it is plugged in again; `lua/screenshare_dnd.lua` turns on do-not-disturb while the
+screen is shared (after 2 s, so screenshots don't trigger it) and back off afterwards; `caelestia-upstream-check.timer` checks weekly whether
 upstream moved and the patches still apply (`update-caelestia.sh --check --no-qml`) and notifies.
 
 ## Keys
