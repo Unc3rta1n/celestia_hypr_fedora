@@ -1,0 +1,26 @@
+diff --git a/modules/launcher/WallpaperList.qml b/modules/launcher/WallpaperList.qml
+index c7047435..cdf56944 100644
+--- a/modules/launcher/WallpaperList.qml
++++ b/modules/launcher/WallpaperList.qml
+@@ -50,10 +50,19 @@ PathView {
+         readonly property string search: root.search.text.split(" ").slice(1).join(" ")
+ 
+         values: Wallpapers.query(search)
+-        onValuesChanged: root.currentIndex = search ? 0 : values.findIndex(w => w.path === Wallpapers.actualCurrent)
++        onValuesChanged: root.currentIndex = search ? 0 : root.randomIndex(values)
+     }
+ 
+-    Component.onCompleted: currentIndex = Wallpapers.list.findIndex(w => w.path === Wallpapers.actualCurrent)
++    // Open on a random wallpaper other than the current one
++    function randomIndex(list: var): int {
++        const current = list.findIndex(w => w.path === Wallpapers.actualCurrent);
++        if (list.length < 2)
++            return current;
++        const i = Math.floor(Math.random() * (list.length - 1));
++        return current >= 0 && i >= current ? i + 1 : i;
++    }
++
++    Component.onCompleted: currentIndex = randomIndex(Wallpapers.list)
+     Component.onDestruction: Wallpapers.stopPreview()
+ 
+     onCurrentItemChanged: {

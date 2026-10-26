@@ -13,6 +13,21 @@ replaced by a locally patched [caelestia-shell](https://github.com/caelestia-dot
 
 Then log out/in. Rollback to the hyprlang config: `./deploy-lua.sh --rollback`.
 
+### Firefox
+
+`caelestia-pywalfox.path` renders the scheme into `~/.cache/wal/colors.json` and runs `pywalfox update`.
+One-time setup:
+
+```bash
+uv tool install pywalfox
+sudo ~/.local/bin/pywalfox install --global
+# Fedora's Firefox reads system manifests only from lib64; user hosts only from ~/.mozilla (not ~/.config/mozilla)
+sudo mv /usr/lib/mozilla/native-messaging-hosts/pywalfox.json /usr/lib64/mozilla/native-messaging-hosts/
+```
+
+Then install the [Pywalfox](https://addons.mozilla.org/firefox/addon/pywalfox/) extension and press "Fetch Pywal colors".
+Dark/light mode in the extension is switched together with the caelestia mode.
+
 ## Updating caelestia
 
 Everything is pinned (`SHELL_REF`, `QS_REV`, `M3_REV`, `CLI_REV` in `install-caelestia.sh`), so a rebuild
@@ -36,7 +51,7 @@ A patch that no longer applies stops it before anything is installed. Rollback:
 | `patches/caelestia/` | shell patches, applied in order on every `install-caelestia.sh` run |
 | `patches/swappy/` | Ctrl+Z & co. on non-latin layouts |
 | `caelestia/` | `~/.config/caelestia/{shell,cli}.json` (copied only if missing) |
-| `systemd/` | `caelestia-kde-colors.path`: KDE apps follow the caelestia scheme; `10-lid-suspend.conf`: lid suspends even with external monitors (installed by `setup-desktop.sh`) |
+| `systemd/` | `caelestia-kde-colors.path`: KDE apps follow the caelestia scheme; `caelestia-pywalfox.path`: Firefox follows it via Pywalfox (see below); `10-lid-suspend.conf`: lid suspends even with external monitors (installed by `setup-desktop.sh`) |
 | `vscode/` | caelestia's VS Code extension (theme "Caelestia") |
 
 ## Patches
@@ -57,6 +72,7 @@ A patch that no longer applies stops it before anything is installed. Rollback:
 14. lockscreen on portrait monitors: box sized from the width, centre on top, side columns below
 15. keyboard layout toast: compact, one line with the layout name
 16. Firefox covers (40x40 from Yandex Music) replaced by the 600x600 cover from the Yandex Music catalogue
+17. wallpaper picker (Super+W) opens on a random wallpaper instead of the current one
 
 ## Keys
 
