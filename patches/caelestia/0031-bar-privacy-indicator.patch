@@ -1,0 +1,125 @@
+diff --git a/modules/bar/Bar.qml b/modules/bar/Bar.qml
+index 79af90b4..af0e0c3f 100644
+--- a/modules/bar/Bar.qml
++++ b/modules/bar/Bar.qml
+@@ -193,6 +193,15 @@ ColumnLayout {
+                     RecordingEntry {}
+                 }
+             }
++            DelegateChoice {
++                roleValue: "privacy"
++                delegate: EntryWrapper {
++                    // only takes space while an app is using the mic or the camera
++                    visible: Privacy.micActive || Privacy.cameraActive
++
++                    PrivacyEntry {}
++                }
++            }
+             DelegateChoice {
+                 roleValue: "statusIcons"
+                 delegate: EntryWrapper {
+diff --git a/modules/bar/components/PrivacyEntry.qml b/modules/bar/components/PrivacyEntry.qml
+new file mode 100644
+index 00000000..1615222e
+--- /dev/null
++++ b/modules/bar/components/PrivacyEntry.qml
+@@ -0,0 +1,44 @@
++pragma ComponentBehavior: Bound
++
++import QtQuick
++import QtQuick.Layouts
++import Caelestia.Config
++import qs.components
++import qs.services
++
++// Bar entry "privacy": mic / camera icons while some app is using them (see services/Privacy.qml).
++// The wrapper in Bar.qml hides it while neither is in use.
++StyledRect {
++    id: root
++
++    readonly property int padding: Tokens.padding.small
++
++    implicitWidth: Tokens.sizes.bar.innerWidth
++    implicitHeight: layout.implicitHeight + root.padding * 2
++
++    color: Qt.alpha(Colours.palette.m3tertiaryContainer, 0.9)
++    radius: Tokens.rounding.full
++
++    ColumnLayout {
++        id: layout
++
++        anchors.centerIn: parent
++        spacing: Tokens.spacing.extraSmall
++
++        MaterialIcon {
++            Layout.alignment: Qt.AlignHCenter
++            visible: Privacy.micActive
++            text: "mic"
++            color: Colours.palette.m3onTertiaryContainer
++            fill: 1
++        }
++
++        MaterialIcon {
++            Layout.alignment: Qt.AlignHCenter
++            visible: Privacy.cameraActive
++            text: "videocam"
++            color: Colours.palette.m3onTertiaryContainer
++            fill: 1
++        }
++    }
++}
+diff --git a/services/Privacy.qml b/services/Privacy.qml
+new file mode 100644
+index 00000000..b65d8ff1
+--- /dev/null
++++ b/services/Privacy.qml
+@@ -0,0 +1,49 @@
++pragma Singleton
++
++import QtQuick
++import Quickshell
++import Quickshell.Io
++
++// What is using the microphone / camera right now, for the bar's "privacy" entry.
++Singleton {
++    id: root
++
++    // Streams recording a microphone. Captures of an output (the visualiser, "record what plays")
++    // have stream.capture.sink set and are not a privacy concern.
++    readonly property list<string> micApps: {
++        const apps = [];
++        for (const s of Audio.streams) {
++            const p = s.properties;
++            if (p["media.class"] !== "Stream/Input/Audio" || p["stream.capture.sink"] === "true")
++                continue;
++            const name = Audio.getStreamName(s);
++            if (!apps.includes(name))
++                apps.push(name);
++        }
++        return apps;
++    }
++    readonly property bool micActive: micApps.length > 0
++
++    // Processes holding a V4L2 device open (apps, or pipewire when they go through the camera portal)
++    property list<string> cameraApps: []
++    readonly property bool cameraActive: cameraApps.length > 0
++
++    Process {
++        id: cameraProc
++
++        // no /dev/video* -> exits at once; fuser prints the PIDs, ps their names
++        command: ["sh", "-c", "set -- /dev/video*; [ -e \"$1\" ] || exit 0; "
++            + "p=$(fuser \"$@\" 2>/dev/null | tr -s ' ' ','); p=${p#,}; [ -n \"$p\" ] && ps -o comm= -p \"$p\" | sort -u"]
++        stdout: StdioCollector {
++            onStreamFinished: root.cameraApps = text.split("\n").filter(l => l.length > 0)
++        }
++    }
++
++    Timer {
++        interval: 3000
++        running: true
++        repeat: true
++        triggeredOnStart: true
++        onTriggered: cameraProc.running = true
++    }
++}

@@ -123,6 +123,10 @@
         "enabled": true
       },
       {
+        "id": "privacy",
+        "enabled": true
+      },
+      {
         "id": "tray",
         "enabled": true
       },
