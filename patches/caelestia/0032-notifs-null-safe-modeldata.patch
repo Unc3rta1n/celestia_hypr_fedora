@@ -1,0 +1,272 @@
+diff --git a/modules/notifications/Notification.qml b/modules/notifications/Notification.qml
+index b588f28b..9faf5cab 100644
+--- a/modules/notifications/Notification.qml
++++ b/modules/notifications/Notification.qml
+@@ -16,18 +16,18 @@ StyledRect {
+     id: root
+ 
+     required property NotifData modelData
+-    readonly property bool hasImage: modelData.image.length > 0
+-    readonly property bool hasAppIcon: modelData.appIcon.length > 0
+-    readonly property int bodyTextFormat: /[<*_`#\[\]]/.test(modelData.body) ? Text.MarkdownText : Text.PlainText
++    readonly property bool hasImage: modelData?.image.length > 0
++    readonly property bool hasAppIcon: modelData?.appIcon.length > 0
++    readonly property int bodyTextFormat: /[<*_`#\[\]]/.test(modelData?.body) ? Text.MarkdownText : Text.PlainText
+     // The preview goes through TextMetrics, which knows nothing about
+     // textFormat and so elides the raw markup: use the text only there. Links
+     // stay clickable in the expanded body, which is rendered in full.
+-    readonly property string bodyPreviewText: Strings.stripMarkup(modelData.body)
+-    readonly property int bodyPreviewTextFormat: Strings.hasMarkup(modelData.body) ? Text.PlainText : bodyTextFormat
++    readonly property string bodyPreviewText: Strings.stripMarkup(modelData?.body)
++    readonly property int bodyPreviewTextFormat: Strings.hasMarkup(modelData?.body) ? Text.PlainText : bodyTextFormat
+     readonly property int nonAnimHeight: summary.implicitHeight + (root.expanded ? Tokens.spacing.extraSmall * 2 + appName.height + body.height + actions.height + actions.anchors.topMargin : bodyPreview.height) + inner.anchors.margins * 2
+     property bool expanded: Config.notifs.openExpanded
+ 
+-    color: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3secondaryContainer : Colours.tPalette.m3surfaceContainer
++    color: root.modelData?.urgency === NotificationUrgency.Critical ? Colours.palette.m3secondaryContainer : Colours.tPalette.m3surfaceContainer
+     radius: Tokens.rounding.large
+ 
+     implicitHeight: inner.implicitHeight
+@@ -35,9 +35,9 @@ StyledRect {
+     x: implicitWidth
+     Component.onCompleted: {
+         x = 0;
+-        modelData.lock(this);
++        modelData?.lock(this);
+     }
+-    Component.onDestruction: modelData.unlock(this)
++    Component.onDestruction: modelData?.unlock(this)
+ 
+     Behavior on x {
+         Anim {
+@@ -49,10 +49,10 @@ StyledRect {
+     property real timeLeft: 1
+ 
+     NumberAnimation on timeLeft {
+-        running: root.modelData.timer.running && (GlobalConfig.notifs.expire || root.modelData.hasFullscreen)
++        running: root.modelData?.timer.running && (GlobalConfig.notifs.expire || root.modelData?.hasFullscreen)
+         from: 1
+         to: 0
+-        duration: root.modelData.timer.interval
++        duration: root.modelData?.timer.interval
+     }
+ 
+     // Inside the bottom padding: the popup list cuts the last ~5 px of the last card
+@@ -68,7 +68,7 @@ StyledRect {
+         implicitWidth: (root.width - Tokens.padding.medium * 2) * root.timeLeft
+         implicitHeight: 3
+         radius: Tokens.rounding.full
+-        color: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3secondary : Colours.palette.m3primary
++        color: root.modelData?.urgency === NotificationUrgency.Critical ? Colours.palette.m3secondary : Colours.palette.m3primary
+     }
+ 
+     MouseArea {
+@@ -80,24 +80,24 @@ StyledRect {
+         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+         preventStealing: true
+ 
+-        onEntered: root.modelData.timer.stop()
++        onEntered: root.modelData?.timer.stop()
+         onExited: {
+             if (!pressed)
+-                root.modelData.timer.start();
++                root.modelData?.timer.start();
+         }
+ 
+         drag.target: parent
+         drag.axis: Drag.XAxis
+ 
+         onPressed: event => {
+-            root.modelData.timer.stop();
++            root.modelData?.timer.stop();
+             startY = event.y;
+             if (event.button === Qt.MiddleButton)
+-                root.modelData.close();
++                root.modelData?.close();
+         }
+         onReleased: event => {
+             if (!containsMouse)
+-                root.modelData.timer.start();
++                root.modelData?.timer.start();
+ 
+             if (Math.abs(root.x) < root.implicitWidth * Config.notifs.clearThreshold)
+                 root.x = 0;
+@@ -116,9 +116,9 @@ StyledRect {
+                 return;
+ 
+             // Prefer the spec's "default" action (Telegram & co. send it alongside e.g. "Mark as read")
+-            const actions = root.modelData.actions;
++            const actions = root.modelData?.actions;
+             const defaultAction = actions.find(a => a.identifier === "default");
+-            const desktopEntry = root.modelData.notification?.desktopEntry ?? "";
++            const desktopEntry = root.modelData?.notification?.desktopEntry ?? "";
+             if (defaultAction)
+                 defaultAction.invoke();
+             else if (actions.length === 1)
+@@ -160,13 +160,13 @@ StyledRect {
+ 
+                 sourceComponent: ClipRect {
+                     radius: Tokens.rounding.full
+-                    color: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3error : root.modelData.urgency === NotificationUrgency.Low ? Colours.layer(Colours.palette.m3surfaceContainerHighest, 2) : Colours.palette.m3secondaryContainer
++                    color: root.modelData?.urgency === NotificationUrgency.Critical ? Colours.palette.m3error : root.modelData?.urgency === NotificationUrgency.Low ? Colours.layer(Colours.palette.m3surfaceContainerHighest, 2) : Colours.palette.m3secondaryContainer
+                     implicitWidth: TokenConfig.sizes.notifs.image
+                     implicitHeight: TokenConfig.sizes.notifs.image
+ 
+                     Image {
+                         anchors.fill: parent
+-                        source: Qt.resolvedUrl(root.modelData.image)
++                        source: Qt.resolvedUrl(root.modelData?.image)
+                         fillMode: Image.PreserveAspectCrop
+                         sourceSize: {
+                             const size = TokenConfig.sizes.notifs.image * ((QsWindow.window as QsWindow)?.devicePixelRatio ?? 1);
+@@ -191,7 +191,7 @@ StyledRect {
+ 
+                 sourceComponent: StyledRect {
+                     radius: Tokens.rounding.full
+-                    color: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3error : root.modelData.urgency === NotificationUrgency.Low ? Colours.layer(Colours.palette.m3surfaceContainerHighest, 2) : Colours.palette.m3secondaryContainer
++                    color: root.modelData?.urgency === NotificationUrgency.Critical ? Colours.palette.m3error : root.modelData?.urgency === NotificationUrgency.Low ? Colours.layer(Colours.palette.m3surfaceContainerHighest, 2) : Colours.palette.m3secondaryContainer
+                     implicitWidth: root.hasImage ? Tokens.sizes.notifs.badge : TokenConfig.sizes.notifs.image
+                     implicitHeight: root.hasImage ? Tokens.sizes.notifs.badge : TokenConfig.sizes.notifs.image
+ 
+@@ -208,9 +208,9 @@ StyledRect {
+ 
+                         sourceComponent: ColouredIcon {
+                             anchors.fill: parent
+-                            source: Quickshell.iconPath(root.modelData.appIcon)
+-                            colour: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3onError : root.modelData.urgency === NotificationUrgency.Low ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
+-                            layer.enabled: root.modelData.appIcon.endsWith("symbolic")
++                            source: Quickshell.iconPath(root.modelData?.appIcon)
++                            colour: root.modelData?.urgency === NotificationUrgency.Critical ? Colours.palette.m3onError : root.modelData?.urgency === NotificationUrgency.Low ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
++                            layer.enabled: root.modelData?.appIcon.endsWith("symbolic")
+                         }
+                     }
+ 
+@@ -221,8 +221,8 @@ StyledRect {
+                         anchors.verticalCenterOffset: 1
+ 
+                         sourceComponent: MaterialIcon {
+-                            text: Icons.getNotifIcon(root.modelData.summary, root.modelData.urgency)
+-                            color: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3onError : root.modelData.urgency === NotificationUrgency.Low ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
++                            text: Icons.getNotifIcon(root.modelData?.summary, root.modelData?.urgency)
++                            color: root.modelData?.urgency === NotificationUrgency.Critical ? Colours.palette.m3onError : root.modelData?.urgency === NotificationUrgency.Low ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
+                             fontStyle: Tokens.font.icon.medium
+                         }
+                     }
+@@ -254,7 +254,7 @@ StyledRect {
+                         centerY: progressIndicator.height / 2
+ 
+                         startAngle: -90
+-                        sweepAngle: ((root.modelData.hints.value ?? 0) / 100) * 360
++                        sweepAngle: ((root.modelData?.hints.value ?? 0) / 100) * 360
+ 
+                         Behavior on sweepAngle {
+                             Anim {
+@@ -290,7 +290,7 @@ StyledRect {
+             TextMetrics {
+                 id: appNameMetrics
+ 
+-                text: root.modelData.appName
++                text: root.modelData?.appName
+                 font: appName.font
+                 elide: Text.ElideRight
+                 elideWidth: expandBtn.x - time.width - timeSep.width - summary.x - root.Tokens.spacing.small * 3
+@@ -344,7 +344,7 @@ StyledRect {
+             TextMetrics {
+                 id: summaryMetrics
+ 
+-                text: root.modelData.summary
++                text: root.modelData?.summary
+                 font: summary.font
+                 elide: Text.ElideRight
+                 elideWidth: expandBtn.x - time.width - timeSep.width - summary.x - root.Tokens.spacing.small * 3
+@@ -385,7 +385,7 @@ StyledRect {
+ 
+                 animate: true
+                 horizontalAlignment: Text.AlignLeft
+-                text: root.modelData.timeStr
++                text: root.modelData?.timeStr
+                 color: Colours.palette.m3onSurfaceVariant
+                 font: Tokens.font.body.small
+             }
+@@ -403,7 +403,7 @@ StyledRect {
+                 // Hide the popup; the notification stays in the sidebar (middle click removes it)
+                 StateLayer {
+                     radius: Tokens.rounding.full
+-                    color: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
++                    color: root.modelData?.urgency === NotificationUrgency.Critical ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
+                     onClicked: root.modelData.popup = false
+                 }
+ 
+@@ -428,7 +428,7 @@ StyledRect {
+ 
+                 StateLayer {
+                     radius: Tokens.rounding.full
+-                    color: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
++                    color: root.modelData?.urgency === NotificationUrgency.Critical ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
+                     onClicked: root.expanded = !root.expanded
+                 }
+ 
+@@ -493,7 +493,7 @@ StyledRect {
+ 
+                 animate: true
+                 textFormat: root.bodyTextFormat
+-                text: root.modelData.body
++                text: root.modelData?.body
+                 color: Colours.palette.m3onSurfaceVariant
+                 font: Tokens.font.body.small
+                 wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+@@ -536,16 +536,16 @@ StyledRect {
+                 IconButton {
+                     isRound: true
+                     shapeMorph: true
+-                    fillWidth: root.modelData.actions.length === 0
+-                    inactiveColour: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3secondary : Colours.layer(Colours.palette.m3surfaceContainerHighest, 2)
+-                    inactiveOnColour: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3onSecondary : Colours.palette.m3onSurfaceVariant
++                    fillWidth: root.modelData?.actions.length === 0
++                    inactiveColour: root.modelData?.urgency === NotificationUrgency.Critical ? Colours.palette.m3secondary : Colours.layer(Colours.palette.m3surfaceContainerHighest, 2)
++                    inactiveOnColour: root.modelData?.urgency === NotificationUrgency.Critical ? Colours.palette.m3onSecondary : Colours.palette.m3onSurfaceVariant
+                     icon: "close"
+                     padding: Tokens.padding.extraSmall
+-                    onClicked: root.modelData.close()
++                    onClicked: root.modelData?.close()
+                 }
+ 
+                 Repeater {
+-                    model: root.modelData.actions
++                    model: root.modelData?.actions
+ 
+                     TextButton {
+                         required property var modelData
+@@ -553,10 +553,10 @@ StyledRect {
+                         isRound: true
+                         shapeMorph: true
+                         fillWidth: true
+-                        inactiveColour: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3secondary : Colours.layer(Colours.palette.m3surfaceContainerHighest, 2)
+-                        inactiveOnColour: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3onSecondary : Colours.palette.m3onSurfaceVariant
+-                        text: modelData.text
+-                        onClicked: modelData.invoke()
++                        inactiveColour: root.modelData?.urgency === NotificationUrgency.Critical ? Colours.palette.m3secondary : Colours.layer(Colours.palette.m3surfaceContainerHighest, 2)
++                        inactiveOnColour: root.modelData?.urgency === NotificationUrgency.Critical ? Colours.palette.m3onSecondary : Colours.palette.m3onSurfaceVariant
++                        text: modelData?.text
++                        onClicked: modelData?.invoke()
+ 
+                         label.horizontalAlignment: Text.AlignHCenter
+                         label.anchors.left: left
+@@ -571,13 +571,13 @@ StyledRect {
+                 IconButton {
+                     isRound: true
+                     shapeMorph: true
+-                    fillWidth: root.modelData.actions.length === 0
+-                    inactiveColour: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3secondary : Colours.layer(Colours.palette.m3surfaceContainerHighest, 2)
+-                    inactiveOnColour: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3onSecondary : Colours.palette.m3onSurfaceVariant
++                    fillWidth: root.modelData?.actions.length === 0
++                    inactiveColour: root.modelData?.urgency === NotificationUrgency.Critical ? Colours.palette.m3secondary : Colours.layer(Colours.palette.m3surfaceContainerHighest, 2)
++                    inactiveOnColour: root.modelData?.urgency === NotificationUrgency.Critical ? Colours.palette.m3onSecondary : Colours.palette.m3onSurfaceVariant
+                     icon: copyTimer.running ? "inventory" : "content_copy"
+                     padding: Tokens.padding.extraSmall
+                     onClicked: {
+-                        Quickshell.clipboardText = root.modelData.body;
++                        Quickshell.clipboardText = root.modelData?.body;
+                         copyTimer.restart();
+                     }
+                     label.animate: true
