@@ -199,8 +199,10 @@ bind(M("SHIFT + Print"), global("screenshotFreezeClip"), "screenshot area (froze
 bind(M("CTRL + Print"), exec(S .. "/screenshot.sh in 5"), "screenshot in 5s")
 bind(M("CTRL + SHIFT + Print"), exec(S .. "/screenshot.sh in 10"), "screenshot in 10s")
 bind("ALT + Print", exec(S .. "/screenshot.sh active"), "screenshot active window")
--- OCR: caelestia picker (patches/0007) -> tesseract rus+eng -> clipboard
+-- OCR: caelestia picker (patches/0007) -> scripts/screen-ocr (RapidOCR rus+eng) -> clipboard
 bind(M("SHIFT + code:28"), global("ocr"), "OCR area -> clipboard (text)")                          -- T
+-- QR: caelestia picker (patches/0030) -> zbarimg -> clipboard; clicking the notification opens a link
+bind(M("ALT + code:24"), global("qr"), "QR code in area -> clipboard")                             -- Q
 -- Screen recording via the shell (patches/0008: keeps the bar indicator's timer/pause in sync);
 -- same key again stops; saved to ~/Videos/Recordings, path copied (paste = attach file)
 bind(M("SHIFT + code:27"), shell("recorder toggle area"), "record area (again = stop)")         -- R

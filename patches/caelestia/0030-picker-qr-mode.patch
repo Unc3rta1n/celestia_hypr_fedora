@@ -1,0 +1,138 @@
+diff --git a/modules/areapicker/AreaPicker.qml b/modules/areapicker/AreaPicker.qml
+index b18e1825..c06049b0 100644
+--- a/modules/areapicker/AreaPicker.qml
++++ b/modules/areapicker/AreaPicker.qml
+@@ -15,6 +15,7 @@ Scope {
+         property bool closing
+         property bool clipboardOnly
+         property bool ocr
++        property bool qr
+ 
+         Variants {
+             model: Screens.screens
+@@ -53,6 +54,7 @@ Scope {
+             root.freeze = false;
+             root.closing = false;
+             root.ocr = false;
++            root.qr = false;
+             root.clipboardOnly = false;
+             root.activeAsync = true;
+         }
+@@ -61,6 +63,7 @@ Scope {
+             root.freeze = true;
+             root.closing = false;
+             root.ocr = false;
++            root.qr = false;
+             root.clipboardOnly = false;
+             root.activeAsync = true;
+         }
+@@ -69,6 +72,7 @@ Scope {
+             root.freeze = false;
+             root.closing = false;
+             root.ocr = false;
++            root.qr = false;
+             root.clipboardOnly = true;
+             root.activeAsync = true;
+         }
+@@ -77,6 +81,7 @@ Scope {
+             root.freeze = true;
+             root.closing = false;
+             root.ocr = false;
++            root.qr = false;
+             root.clipboardOnly = true;
+             root.activeAsync = true;
+         }
+@@ -85,6 +90,16 @@ Scope {
+             root.freeze = true;
+             root.closing = false;
+             root.ocr = true;
++            root.qr = false;
++            root.clipboardOnly = false;
++            root.activeAsync = true;
++        }
++
++        function openQr(): void {
++            root.freeze = true;
++            root.closing = false;
++            root.ocr = false;
++            root.qr = true;
+             root.clipboardOnly = false;
+             root.activeAsync = true;
+         }
+@@ -101,6 +116,7 @@ Scope {
+             root.freeze = false;
+             root.closing = false;
+             root.ocr = false;
++            root.qr = false;
+             root.clipboardOnly = false;
+             root.activeAsync = true;
+         }
+@@ -115,6 +131,7 @@ Scope {
+             root.freeze = true;
+             root.closing = false;
+             root.ocr = false;
++            root.qr = false;
+             root.clipboardOnly = false;
+             root.activeAsync = true;
+         }
+@@ -129,6 +146,7 @@ Scope {
+             root.freeze = false;
+             root.closing = false;
+             root.ocr = false;
++            root.qr = false;
+             root.clipboardOnly = true;
+             root.activeAsync = true;
+         }
+@@ -143,6 +161,7 @@ Scope {
+             root.freeze = true;
+             root.closing = false;
+             root.ocr = false;
++            root.qr = false;
+             root.clipboardOnly = true;
+             root.activeAsync = true;
+         }
+@@ -157,6 +176,22 @@ Scope {
+             root.freeze = true;
+             root.closing = false;
+             root.ocr = true;
++            root.qr = false;
++            root.clipboardOnly = false;
++            root.activeAsync = true;
++        }
++    }
++
++    // qmllint disable unresolved-type
++    CustomShortcut {
++        // qmllint enable unresolved-type
++        name: "qr"
++        description: "Decode a QR code in an area (freeze mode) -> clipboard"
++        onPressed: {
++            root.freeze = true;
++            root.closing = false;
++            root.ocr = false;
++            root.qr = true;
+             root.clipboardOnly = false;
+             root.activeAsync = true;
+         }
+diff --git a/modules/areapicker/Picker.qml b/modules/areapicker/Picker.qml
+index f702800d..54d86c62 100644
+--- a/modules/areapicker/Picker.qml
++++ b/modules/areapicker/Picker.qml
+@@ -83,7 +83,16 @@ MouseArea {
+     function save(): void {
+         const tmpfile = Qt.resolvedUrl(`/tmp/caelestia-picker-${Quickshell.processId}-${Date.now()}.png`);
+         CUtils.saveItem(screencopy, tmpfile, Qt.rect(Math.ceil(rsx), Math.ceil(rsy), Math.floor(sw), Math.floor(sh)), path => {
+-            if (root.loader.ocr) {
++            if (root.loader.qr) {
++                // zbar -> clipboard; a link opens when the notification is clicked (default action)
++                const script = 't=$(zbarimg -q --raw "$1" 2>/dev/null); rm -f "$1"; '
++                    + 'if [ -z "$t" ]; then notify-send -a caelestia-cli -u low "$3"; exit; fi; '
++                    + 'printf "%s" "$t" | wl-copy; '
++                    + 'case "$t" in http://*|https://*) '
++                    + '[ "$(notify-send -a caelestia-cli -i edit-copy -A default="$4" "$2" "$t")" = default ] && xdg-open "$t" ;; '
++                    + '*) notify-send -a caelestia-cli -i edit-copy "$2" "$t" ;; esac';
++                Quickshell.execDetached(["sh", "-c", script, "sh", path, Tr.tr("QR code copied"), Tr.tr("No QR code found"), Tr.tr("Open link")]);
++            } else if (root.loader.ocr) {
+                 // OCR -> clipboard; the notification shows what was recognised. screen-ocr (RapidOCR,
+                 // ~/.config/hypr/scripts) reads small screen text that tesseract garbles ("nttp:/Avww").
+                 // It takes a few seconds: a "recognising" notification stays up until then and is closed

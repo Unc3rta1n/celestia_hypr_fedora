@@ -42,7 +42,7 @@ sudo dnf install -y \
     ddcutil brightnessctl lm_sensors lm_sensors-devel NetworkManager \
     google-rubik-fonts cascadia-code-nf-fonts cascadia-mono-nf-fonts \
     python3-pillow python3-pip python3-devel \
-    gpu-screen-recorder tesseract tesseract-langpack-rus tesseract-langpack-eng adw-gtk3-theme udiskie
+    gpu-screen-recorder tesseract tesseract-langpack-rus tesseract-langpack-eng zbar adw-gtk3-theme udiskie
 
 step "wl-clip-persist (cargo; not packaged for Fedora)"
 command -v wl-clip-persist >/dev/null || [[ -x $HOME/.cargo/bin/wl-clip-persist ]] || cargo install --locked --git https://github.com/Linus789/wl-clip-persist --tag v0.5.0
