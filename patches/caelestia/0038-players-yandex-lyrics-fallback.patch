@@ -1,0 +1,103 @@
+diff --git a/modules/dashboard/media/LyricList.qml b/modules/dashboard/media/LyricList.qml
+index b5898646..db8114a5 100644
+--- a/modules/dashboard/media/LyricList.qml
++++ b/modules/dashboard/media/LyricList.qml
+@@ -25,7 +25,11 @@ Item {
+     }
+ 
+     readonly property real fadeAmount: 0.1
+-    property list<string> lyricList: Lyrics.lyrics
++    // Fallback when LRCLIB has nothing: plain (untimed) lyrics from the Yandex Music catalogue.
++    readonly property var yandexLyrics: !Lyrics.loading && !Lyrics.hasLyrics ? Players.getLyrics(Players.active) : ""
++    readonly property list<string> yandexLines: yandexLyrics ? yandexLyrics.split("\n").filter(l => l.trim()) : []
++    readonly property bool useYandex: yandexLines.length > 0
++    property list<string> lyricList: useYandex ? yandexLines : Lyrics.lyrics
+ 
+     layer.enabled: true
+     layer.effect: Mask {
+@@ -63,9 +67,9 @@ Item {
+     }
+ 
+     state: {
+-        if (Lyrics.hasLyrics)
++        if (Lyrics.hasLyrics || useYandex)
+             return "hasLyrics";
+-        if (Lyrics.loading)
++        if (Lyrics.loading || yandexLyrics === undefined)
+             return "loading";
+         return "noLyrics";
+     }
+@@ -232,7 +236,7 @@ Item {
+         Component.onCompleted: {
+             currentIndex = Qt.binding(() => {
+                 model; // Force update when lyrics change
+-                return Lyrics.indexForTime(Players.active?.position ?? 0);
++                return root.useYandex ? -1 : Lyrics.indexForTime(Players.active?.position ?? 0);
+             });
+             positionViewAtIndex(currentIndex, ListView.Center);
+         }
+@@ -286,7 +290,7 @@ Item {
+                 hoverEnabled: true
+                 onClicked: {
+                     const p = Players.active;
+-                    if (p)
++                    if (p && !root.useYandex)
+                         p.position = Lyrics.timeForIndex(lyric.index);
+                 }
+             }
+diff --git a/services/Players.qml b/services/Players.qml
+index cc2c004c..c4b888b0 100644
+--- a/services/Players.qml
++++ b/services/Players.qml
+@@ -61,6 +61,51 @@ Singleton {
+         xhr.send();
+     }
+ 
++    // Lyrics from the Yandex Music catalogue: /supplement needs no auth (unlike /lyrics, which wants a signature).
++    property var lyricsByKey: ({}) // "artist|title" -> text, "" = not found, null = lookup running
++    property int lyricsRevision: 0
++
++    function lookupLyrics(key: string, artist: string, title: string): void {
++        lyricsByKey[key] = null;
++        const norm = s => s.toLowerCase().replace(/ё/g, "е").trim();
++        const finish = text => {
++            lyricsByKey[key] = text;
++            lyricsRevision++;
++        };
++        const get = (url, cb) => {
++            const xhr = new XMLHttpRequest();
++            xhr.onreadystatechange = () => {
++                if (xhr.readyState !== XMLHttpRequest.DONE)
++                    return;
++                try {
++                    cb(JSON.parse(xhr.responseText).result);
++                } catch (e) {
++                    finish("");
++                }
++            };
++            xhr.open("GET", url);
++            xhr.send();
++        };
++        get(`https://api.music.yandex.net/search?type=track&page=0&text=${encodeURIComponent(`${artist} ${title}`)}`, res => {
++            const wantArtist = norm(artist);
++            const match = (res?.tracks?.results ?? []).find(t => norm(t.title) === norm(title) && t.artists?.some(a => wantArtist.includes(norm(a.name))));
++            if (!match)
++                return finish("");
++            get(`https://api.music.yandex.net/tracks/${match.id}/supplement`, sup => finish(sup?.lyrics?.fullLyrics ?? ""));
++        });
++    }
++
++    // undefined while loading, "" when the catalogue has no lyrics for the track
++    function getLyrics(player: MprisPlayer): var {
++        lyricsRevision; // re-evaluate bindings when a lookup finishes
++        if (!player?.trackArtist || !player?.trackTitle)
++            return "";
++        const key = `${player.trackArtist}|${player.trackTitle}`;
++        if (!(key in lyricsByKey))
++            lookupLyrics(key, player.trackArtist, player.trackTitle);
++        return lyricsByKey[key] ?? undefined;
++    }
++
+     property var lastHiResByPlayer: ({})
+ 
+     function upgradeArt(player: MprisPlayer, url: string): string {
