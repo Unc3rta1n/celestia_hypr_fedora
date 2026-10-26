@@ -27,3 +27,10 @@ DNF	dni dnu dns dnr	install, upgrade --refresh, search, remove
 СИСТЕМА	jc sc scu	journalctl -xeu, systemctl, systemctl --user
 СИСТЕМА	reload	перезапуск zsh
 ПРОМПТ	(авто)	после 30 с в другом окне команда присылает уведомление
+DOCKER	d dps dpa	docker, запущенные, все контейнеры
+DOCKER	dlogs имя	docker logs -f --tail 100
+DOCKER	dstopa	остановить все запущенные контейнеры
+DOCKER	dc dcu dcd dcl	compose: команда, up -d, down, logs -f
+UV	uvr uva uvs	uv run / add / sync
+ПРОЕКТЫ	pk	выбрать парсер в ~/check_parsers через fzf и cd в него
+ПРОЕКТЫ	z chimera	любую папку, где бывал, достаёт zoxide

@@ -88,3 +88,24 @@ _zh_widget() { zle -I; zh; zle reset-prompt }
 zle -N _zh_widget
 bindkey '^[OP' _zh_widget
 bindkey '^[[11~' _zh_widget
+
+# --- docker / uv (from shell history) ---
+alias d='docker'
+alias dps='docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
+alias dpa='docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"'
+alias dlogs='docker logs -f --tail 100'
+alias dstopa='docker stop $(docker ps -q)'
+alias dc='docker compose'
+alias dcu='docker compose up -d'
+alias dcd='docker compose down'
+alias dcl='docker compose logs -f --tail 100'
+alias uvr='uv run'
+alias uva='uv add'
+alias uvs='uv sync'
+
+# pk: pick a parser in ~/check_parsers with fzf and cd into it
+pk() {
+  local dir
+  dir=$(command ls ~/check_parsers | fzf --prompt='parser > ' --height=60% --layout=reverse \
+        --preview 'ls ~/check_parsers/{}') && cd ~/check_parsers/"$dir"
+}
