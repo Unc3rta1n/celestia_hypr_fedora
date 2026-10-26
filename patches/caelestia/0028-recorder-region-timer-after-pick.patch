@@ -1,0 +1,17 @@
+diff --git a/services/Recorder.qml b/services/Recorder.qml
+index 3c54ca45..71e84d60 100644
+--- a/services/Recorder.qml
++++ b/services/Recorder.qml
+@@ -78,7 +78,11 @@ Singleton {
+                 props.paused = !props.paused;
+             } else if (!running && root.needsStart) {
+                 commandProc.exec(["caelestia", "record", ...root.startArgs]);
+-                props.running = true;
++                // A region capture waits on slurp first: don't count time while the area is being
++                // picked (or show a recording if it's cancelled). The reconcile branch below marks it
++                // running once the command exits with the recorder actually started.
++                if (!root.startArgs.includes("-r"))
++                    props.running = true;
+                 props.paused = false;
+                 props.elapsed = 0;
+             } else if (running !== props.running && !commandProc.running) {

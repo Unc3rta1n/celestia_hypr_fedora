@@ -80,6 +80,10 @@ A patch that no longer applies stops it before anything is installed. Rollback:
 22. notification popups: close button (hides the popup, keeps it in the sidebar) and a bar showing the time left
 23. monitor unplug/replug: null guards for dangling screens, so the drawers layer no longer swallows every click (upstream issue #1809)
 24. keyboard layout toast hides after 3 s (was 5 s, hardcoded in the plugin)
+25. lockscreen: a shell restarted while the session is locked takes the lock back, no "lockscreen app died" (upstream PR #2053)
+26. notifications: "clear all" rebuilds the list once, no freeze with a long history (upstream PR #2021)
+27. notifications: raw HTML stripped in elided previews (popup, sidebar, lockscreen) (upstream PR #1851)
+28. screen recorder: the bar timer starts once the area is picked, not while slurp is waiting
 
 ## Keys
 
