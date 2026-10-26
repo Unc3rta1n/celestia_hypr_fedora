@@ -1,7 +1,7 @@
 -- configs/Keybinds.conf + configs/Laptops.conf + UserConfigs/UserKeybinds.conf
 -- Same keys as before. Waybar / rofi / wofi / swaync / wlogout / swww actions now go to caelestia shell.
 -- Keys use keycodes (code:NN) where the original did — works on both us and ru layouts.
--- SUPER+J/K/O and SUPER+arrows are bound per layout in lua/layout.lua (like ChangeLayout.sh did).
+-- SUPER+arrows are in lua/layout.lua (dwindle only, they cross monitors).
 local v    = require("lua.vars")
 local util = require("lua.util")
 
@@ -83,7 +83,6 @@ bind(M("ALT + code:32"), function()                                             
     end
 end, "toggle blur")
 bind(M("SHIFT + code:41"), shell("gameMode toggle"), "toggle game mode")            -- G
-bind(M("ALT + code:46"), function() kool_layout("toggle") end, "toggle layouts")    -- L
 bind(M("code:55"), exec(S .. "/clipboard.sh"), "clipboard manager (bottom, image previews)") -- V (was Super+Alt+V)
 bind(M("CTRL + code:45"), launcher_with(">scheme "), "colour scheme (caelestia; recolours ghostty too)") -- K
 section("Capture")
@@ -139,32 +138,12 @@ bind("CTRL + ALT + code:33", global("session"), "powermenu (caelestia)")        
 
 ---------------------------------------------------------------- LAYOUTS
 section("Layout")
--- Master
-bind(M("CTRL + code:38"), hl.dsp.layout("removemaster"), "remove master")           -- D
-bind(M("code:31"), hl.dsp.layout("addmaster"), "add master")                        -- I
-bind(M("code:44"), hl.dsp.layout("cyclenext"), "cycle next")                        -- J
-bind(M("code:45"), hl.dsp.layout("cycleprev"), "cycle previous")                    -- K
-bind(M("CTRL + Return"), hl.dsp.layout("swapwithmaster"), "swap with master")
--- Dwindle
-bind(M("SHIFT + code:31"), hl.dsp.layout("togglesplit"), "toggle split (dwindle)") -- I
-bind(M("code:33"), hl.dsp.window.pseudo(), "toggle pseudo (dwindle)")               -- P
--- Either layout
+-- dwindle only (lua/layout.lua); SUPER+arrows move focus, also across monitors
+bind(M("code:44"), hl.dsp.window.cycle_next(), "next window")                       -- J
+bind(M("code:45"), hl.dsp.window.cycle_next({ next = false }), "previous window")   -- K
+bind(M("SHIFT + code:31"), hl.dsp.layout("togglesplit"), "toggle split direction") -- I
+bind(M("code:33"), hl.dsp.window.pseudo(), "toggle pseudo")                         -- P
 bind(M("code:58"), hl.dsp.layout("splitratio 0.3"), "set split ratio 0.3")          -- M
--- Direct layout binds
-bind(M("ALT + 1"), function() kool_layout("dwindle") end, "layout dwindle")
-bind(M("ALT + 2"), function() kool_layout("master") end, "layout master")
-bind(M("ALT + 3"), function() kool_layout("scrolling") end, "layout scrolling")
-bind(M("ALT + 4"), function() kool_layout("monocle") end, "layout monocle")
--- Scrolling
-bind(M("SHIFT + period"), hl.dsp.layout("move +col"), "move to right column")
-bind(M("SHIFT + comma"), hl.dsp.layout("move -col"), "move to left column")
-bind(M("ALT + comma"), hl.dsp.layout("swapcol l"), "swap columns left")
-bind(M("ALT + period"), hl.dsp.layout("swapcol r"), "swap columns right")
-bind(M("ALT + code:43"), function() hl.config({ scrolling = { direction = "right" } }) end, "Horizonal scroll right") -- H
-bind(M("ALT + code:39"), function()                                                 -- S
-    local dir = hl.get_config("scrolling.direction")
-    hl.config({ scrolling = { direction = dir == "right" and "down" or "right" } })
-end, "toggle scrolling V/H")
 
 -- Cycle windows; if floating bring to top
 bind("ALT + Tab", function()

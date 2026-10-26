@@ -10,7 +10,7 @@ require("lua.animations")
 require("lua.power")    -- after look & feel: battery overrides
 require("lua.windowrules")
 require("lua.keybinds")
-require("lua.layout")   -- after keybinds: per-layout SUPER+J/K/O/arrows
+require("lua.layout")   -- dwindle; SUPER+arrows
 require("lua.autostart")
 require("lua.screenshare_dnd") -- do not disturb while the screen is shared
 
