@@ -135,6 +135,7 @@ bind(M("SHIFT + code:24"), exec(S .. "/KillActiveProcess.sh"), "Terminate active
 bind("CTRL + ALT + code:46", global("lock"), "lock screen (caelestia)")              -- L, was hyprlock
 bind(M("code:46"), global("lock"), "lock screen (caelestia)")                     -- L, like Win+L
 bind("CTRL + ALT + code:33", global("session"), "powermenu (caelestia)")            -- P, was wlogout
+bind(M("code:33"), global("session"), "powermenu (caelestia)")
 
 ---------------------------------------------------------------- LAYOUTS
 section("Layout")
@@ -142,7 +143,7 @@ section("Layout")
 bind(M("code:44"), hl.dsp.window.cycle_next(), "next window")                       -- J
 bind(M("code:45"), hl.dsp.window.cycle_next({ next = false }), "previous window")   -- K
 bind(M("SHIFT + code:31"), hl.dsp.layout("togglesplit"), "toggle split direction") -- I
-bind(M("code:33"), hl.dsp.window.pseudo(), "toggle pseudo")                         -- P
+--bind(M("code:33"), hl.dsp.window.pseudo(), "toggle pseudo")                         -- P
 bind(M("code:58"), hl.dsp.layout("splitratio 0.3"), "set split ratio 0.3")          -- M
 
 -- Cycle windows; if floating bring to top
