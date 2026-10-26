@@ -174,7 +174,7 @@
       },
       {
         "id": "weather",
-        "enabled": true
+        "enabled": false
       },
       {
         "id": "clock",
