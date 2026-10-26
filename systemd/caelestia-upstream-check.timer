@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly caelestia-shell upstream check
+
+[Timer]
+OnCalendar=Mon 12:00
+Persistent=true
+RandomizedDelaySec=1h
+
+[Install]
+WantedBy=timers.target

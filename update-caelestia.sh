@@ -3,6 +3,8 @@
 #   ./update-caelestia.sh            latest upstream main
 #   ./update-caelestia.sh <rev>      a specific commit/tag
 #   ./update-caelestia.sh --check    only report (no install)
+#   --no-qml                         skip the QML load test (it shows a second bar for a few seconds;
+#                                    used by the weekly scripts/caelestia-upstream-check)
 # Steps: fetch -> apply all local patches on the new rev in a scratch worktree -> compare the
 # flake.lock pins (quickshell / m3shapes / cli) -> load the patched QML for a few seconds and
 # scan for errors -> only then bump the pins in install-caelestia.sh and run it.
@@ -20,11 +22,13 @@ die() { printf '\033[1;31m%s\033[0m\n' "$*" >&2; exit 1; }
 pin() { sed -n "s/^$1=\([0-9a-f]*\).*/\1/p" "$INSTALL"; }
 
 check_only=false
+qml_test=true
 rev=origin/main
 for a in "$@"; do
     case $a in
     --check) check_only=true ;;
-    -h | --help) sed -n '2,11p' "$0"; exit 0 ;;
+    --no-qml) qml_test=false ;;
+    -h | --help) sed -n '2,13p' "$0"; exit 0 ;;
     *) rev=$a ;;
     esac
 done
@@ -37,7 +41,7 @@ old=$(pin SHELL_REF)
 new=$(git -C "$SRC" rev-parse "$rev^{commit}") || die "unknown revision: $rev"
 [[ $old == "$new" ]] && { echo "already at ${new:0:8}"; exit 0; }
 echo "${old:0:8} -> ${new:0:8}"
-git -C "$SRC" log --oneline --no-decorate "$old..$new" | head -40
+git -C "$SRC" log --oneline --no-decorate --max-count=40 "$old..$new" # not | head: SIGPIPE under pipefail kills the script
 
 step "apply local patches on ${new:0:8}"
 git -C "$SRC" worktree remove --force "$WT" 2>/dev/null || rm -rf "$WT"
@@ -71,7 +75,9 @@ for k in QS_REV M3_REV CLI_REV; do
 done
 
 step "QML load test"
-if $deps_changed || ! git -C "$SRC" diff --quiet "$old" "$new" -- plugin CMakeLists.txt; then
+if ! $qml_test; then
+    echo "  skipped (--no-qml)"
+elif $deps_changed || ! git -C "$SRC" diff --quiet "$old" "$new" -- plugin CMakeLists.txt; then
     # the new QML may need the new C++ plugin / quickshell, which only exist after the real build
     echo "  skipped: plugin or dependencies changed, the build in install-caelestia.sh is the test"
 else

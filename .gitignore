@@ -4,3 +4,4 @@ hypr/scripts/dots-tui-ubuntu-2404
 *.pre-*
 *.bak
 *.tmp
+__pycache__/

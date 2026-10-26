@@ -52,6 +52,11 @@ systemctl --user daemon-reload
 systemctl --user enable --now caelestia-pywalfox.path
 systemctl --user start caelestia-pywalfox.service || true
 
+# weekly: newer caelestia-shell upstream? do the local patches still apply? (notification only)
+cp "$HERE"/systemd/caelestia-upstream-check.{service,timer} "$HOME/.config/systemd/user/"
+systemctl --user daemon-reload
+systemctl --user enable --now caelestia-upstream-check.timer
+
 # VS Code follows the scheme via caelestia's own extension (theme "Caelestia")
 if command -v code >/dev/null; then
     code --install-extension "$HERE"/vscode/caelestia-vscode-integration-1.2.0.vsix >/dev/null 2>&1 || true

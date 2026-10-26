@@ -1,0 +1,7 @@
+[Unit]
+Description=Check for a newer caelestia-shell upstream and whether the local patches still apply
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.config/hypr/scripts/caelestia-upstream-check

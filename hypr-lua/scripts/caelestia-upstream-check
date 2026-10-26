@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Weekly (systemd/caelestia-upstream-check.timer): is there a newer caelestia-shell upstream, and do
+# all local patches still apply to it? Runs `update-caelestia.sh --check --no-qml` (nothing is
+# installed) and says the result in a notification. Silent when there is nothing new.
+set -uo pipefail
+REPO=${CAELESTIA_REPO:-$HOME/convert_hypr_caelestia}
+SRC=${BUILD:-$HOME/.cache/caelestia-build}/shell
+
+[[ -x $REPO/update-caelestia.sh ]] || { echo "no $REPO/update-caelestia.sh" >&2; exit 1; }
+
+out=$("$REPO/update-caelestia.sh" --check --no-qml 2>&1)
+code=$?
+out=$(sed 's/\x1b\[[0-9;]*m//g' <<<"$out") # drop the colours of its step/die messages
+grep -q '^already at' <<<"$out" && exit 0
+
+pin=$(sed -n 's/^SHELL_REF=\([0-9a-f]*\).*/\1/p' "$REPO/install-caelestia.sh")
+count=$(git -C "$SRC" rev-list --count "$pin..origin/main" 2>/dev/null || echo "?")
+
+if ((code == 0)); then
+    notify-send -a caelestia-cli -i software-update-available "caelestia: $count new commits" \
+        "All local patches apply. Update: cd $REPO && ./update-caelestia.sh"
+elif failed=$(sed -n 's/^patches need rebasing onto [0-9a-f]*: \(.*\) (nothing installed)$/\1/p' <<<"$out") && [[ -n $failed ]]; then
+    notify-send -a caelestia-cli -u critical -i software-update-urgent "caelestia: $count new commits, patches conflict" \
+        "No longer apply: $failed"
+else
+    notify-send -a caelestia-cli -u critical -i dialog-error "caelestia: upstream check failed" "$(tail -n 3 <<<"$out")"
+fi

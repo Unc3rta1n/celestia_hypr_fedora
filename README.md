@@ -85,9 +85,14 @@ A patch that no longer applies stops it before anything is installed. Rollback:
 27. notifications: raw HTML stripped in elided previews (popup, sidebar, lockscreen) (upstream PR #1851)
 28. screen recorder: the bar timer starts once the area is picked, not while slurp is waiting
 29. battery popout: no "Performance degraded / too hot" banner (tuned-ppd raises it whenever power-saver is on)
+30. area picker QR mode (`caelestia:qr`, zbarimg -> clipboard; clicking the notification opens a link)
+
+Outside the shell: `lua/workspace_home.lua` moves workspaces back to their monitor (rules from
+`workspaces.lua`) when it is plugged in again; `caelestia-upstream-check.timer` checks weekly whether
+upstream moved and the patches still apply (`update-caelestia.sh --check --no-qml`) and notifies.
 
 ## Keys
 
 Super+H shows every bind, grouped. New ones: Super+` Telegram scratchpad, Super+U special workspace,
-Super+Shift+T OCR, Super+Shift+R / Super+Ctrl+R record area / monitor+sound (again = stop),
+Super+Shift+T OCR, Super+Alt+Q QR code, Super+Shift+R / Super+Ctrl+R record area / monitor+sound (again = stop),
 Super+Ctrl+Shift+R pause.
