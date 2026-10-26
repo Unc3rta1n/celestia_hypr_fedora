@@ -82,20 +82,28 @@ mark "m3shapes-${M3_REV:0:8}"
 fi
 
 step "caelestia-shell @ $SHELL_REF"
-# drop previously applied local patches, incl. files they created (keep build/), then go to the pin
-if [[ -d $BUILD/shell/.git ]]; then
-    git -C "$BUILD/shell" reset -q --hard
-    git -C "$BUILD/shell" clean -fdq -e build
-fi
-clone https://github.com/caelestia-dots/shell "$BUILD/shell" "$SHELL_REF"
+# Patches go onto a clean worktree of the pin, then only files whose content changed are synced into
+# the build tree: unchanged sources keep their mtime and ninja skips them. (reset --hard + re-apply
+# touched every patched file, so each run recompiled e.g. the whole Services module's moc.)
+SRC=$BUILD/shell
+STAGE=$BUILD/shell-patched
+[[ -d $SRC/.git ]] || git clone https://github.com/caelestia-dots/shell "$SRC"
+git -C "$SRC" fetch --tags origin
+git -C "$SRC" worktree remove --force "$STAGE" 2>/dev/null || rm -rf "$STAGE"
+git -C "$SRC" worktree prune
+git -C "$SRC" worktree add -q --detach "$STAGE" "$SHELL_REF"
 for p in "$(dirname "$0")"/patches/caelestia/*.patch; do
     [[ -e $p ]] || continue
     echo "applying $(basename "$p")"
-    git -C "$BUILD/shell" apply "$(realpath "$p")" || {
+    git -C "$STAGE" apply "$(realpath "$p")" || {
         echo "patch $(basename "$p") no longer applies; installed shell left untouched" >&2
+        git -C "$SRC" worktree remove --force "$STAGE"
         exit 1
     }
 done
+rsync -rlpc --delete --exclude=/.git --exclude=/build "$STAGE/" "$SRC/"
+git -C "$SRC" reset -q "$SHELL_REF" # HEAD + index at the pin, the working tree keeps the patches
+git -C "$SRC" worktree remove --force "$STAGE"
 cmake -S "$BUILD/shell" -B "$BUILD/shell/build" -G Ninja \
     -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
     -DINSTALL_LIBDIR=lib/caelestia -DINSTALL_QMLDIR=lib64/qt6/qml \
