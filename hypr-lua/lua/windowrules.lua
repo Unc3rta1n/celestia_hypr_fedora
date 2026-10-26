@@ -736,7 +736,7 @@ hl.window_rule({
         tag = "vpnclient",
     },
     float = true,
-    move = "monitor_w*0.72 monitor_h*0.07",
+    center = true,
     opacity = "0.95 0.6",
     keep_aspect_ratio = true,
     size = "(monitor_w*0.5) (monitor_h*0.5)",
