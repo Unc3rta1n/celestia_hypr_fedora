@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Clipboard history (cliphist) in fuzzel at the bottom of the screen with image previews,
 # then pastes into the focused window. Ctrl+Del deletes an entry, Alt+Del wipes history.
-# (port of KoolDots ClipManager.sh from rofi)
+# (port of the KoolDots rofi ClipManager.sh)
 CONF=$HOME/.config/fuzzel/clipboard.ini
 CACHE=${XDG_CACHE_HOME:-$HOME/.cache}/cliphist-img
 mkdir -p "$CACHE"
