@@ -121,9 +121,15 @@ fi
 step "Material Symbols Rounded font"
 FONT_DIR=$HOME/.local/share/fonts/material-symbols
 mkdir -p "$FONT_DIR"
-curl -fL -o "$FONT_DIR/MaterialSymbolsRounded.ttf" \
-    "https://github.com/google/material-design-icons/raw/master/variablefont/MaterialSymbolsRounded%5BFILL,GRAD,opsz,wght%5D.ttf"
-fc-cache -f "$FONT_DIR"
+# downloaded once (rm the .ttf to refresh); .part keeps a broken download from counting as done
+if [[ -s $FONT_DIR/MaterialSymbolsRounded.ttf ]]; then
+    printf '\033[1;32m==> font already installed, skipping\033[0m\n'
+else
+    curl -fL -o "$FONT_DIR/MaterialSymbolsRounded.ttf.part" \
+        "https://github.com/google/material-design-icons/raw/master/variablefont/MaterialSymbolsRounded%5BFILL,GRAD,opsz,wght%5D.ttf"
+    mv "$FONT_DIR/MaterialSymbolsRounded.ttf.part" "$FONT_DIR/MaterialSymbolsRounded.ttf"
+    fc-cache -f "$FONT_DIR"
+fi
 
 
 step "done"
