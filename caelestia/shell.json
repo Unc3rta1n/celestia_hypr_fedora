@@ -658,5 +658,8 @@
         "enabled": true
       }
     ]
+  },
+  "sidebar": {
+    "showOnHover": true
   }
 }
