@@ -38,9 +38,10 @@ sudo dnf install -y \
     spirv-tools cli11-devel wayland-devel wayland-protocols-devel libdrm-devel mesa-libgbm-devel \
     jemalloc-devel pam-devel polkit-devel glib2-devel pipewire-devel libxcb-devel \
     aubio-devel libqalculate-devel fftw-devel iniparser-devel \
-    fish fuzzel grim slurp swappy wl-clipboard cliphist libnotify dconf trash-cli \
+    fish fuzzel grim slurp wl-clipboard cliphist libnotify dconf trash-cli \
     ddcutil brightnessctl lm_sensors lm_sensors-devel NetworkManager \
     google-rubik-fonts cascadia-code-nf-fonts cascadia-mono-nf-fonts \
+    gtk3-devel cairo-devel pango-devel \
     python3-pillow python3-pip python3-devel \
     gpu-screen-recorder tesseract tesseract-langpack-rus tesseract-langpack-eng zbar adw-gtk3-theme udiskie
 
