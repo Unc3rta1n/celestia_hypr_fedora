@@ -36,7 +36,7 @@ A patch that no longer applies stops it before anything is installed. Rollback:
 | `patches/caelestia/` | shell patches, applied in order on every `install-caelestia.sh` run |
 | `patches/swappy/` | Ctrl+Z & co. on non-latin layouts |
 | `caelestia/` | `~/.config/caelestia/{shell,cli}.json` (copied only if missing) |
-| `systemd/` | `caelestia-kde-colors.path`: KDE apps follow the caelestia scheme |
+| `systemd/` | `caelestia-kde-colors.path`: KDE apps follow the caelestia scheme; `10-lid-suspend.conf`: lid suspends even with external monitors (installed by `setup-desktop.sh`) |
 | `vscode/` | caelestia's VS Code extension (theme "Caelestia") |
 
 ## Patches

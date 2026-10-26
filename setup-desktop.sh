@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Desktop tweaks made by hand outside ~/.config/hypr during the migration. Idempotent: rerun safely.
 #   ghostty / zsh colours from caelestia, Qt + KDE fonts, cursor (XCursor fallback), Dolphin defaults,
-#   menus for "Open with", swaync out of the way, workspace overview.
+#   menus for "Open with", swaync out of the way, lid suspend when docked, workspace overview.
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 
@@ -67,6 +67,13 @@ kbuildsycoca6 >/dev/null 2>&1 || true
 
 step "swaync: masked (it D-Bus-activates and steals caelestia's notifications)"
 systemctl --user mask swaync.service 2>/dev/null || true
+
+step "logind: lid closed -> suspend, also with external monitors (sudo)"
+lid=/etc/systemd/logind.conf.d/10-lid-suspend.conf
+if ! cmp -s "$HERE"/systemd/10-lid-suspend.conf "$lid"; then
+    sudo install -Dm644 "$HERE"/systemd/10-lid-suspend.conf "$lid"
+    sudo systemctl kill -s HUP systemd-logind  # reload config without ending the session
+fi
 
 step "workspace overview (Super+A)"
 ov=$HOME/.config/quickshell/overview
