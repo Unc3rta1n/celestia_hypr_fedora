@@ -1,0 +1,6 @@
+[Unit]
+Description=Render caelestia scheme into the pywal palette read by Pywalfox
+
+[Service]
+Type=oneshot
+ExecStart=%h/.config/hypr/scripts/caelestia-pywalfox

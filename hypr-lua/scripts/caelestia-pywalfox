@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+"""Follow the caelestia colour scheme in Firefox through Pywalfox.
+
+Pywalfox reads a pywal palette from ~/.cache/wal/colors.json and picks its browser colours
+by index (dark: bg 0, accents 10/13, text 15; light: text 0, accents 3/5, bg from 7).
+Fills those slots with caelestia's Material colours, the rest with its terminal colours,
+then asks the running Pywalfox daemon to re-apply.
+
+Run by caelestia-pywalfox.path on every scheme change.
+"""
+import json
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+HOME = Path.home()
+SCHEME = HOME / ".local/state/caelestia/scheme.json"
+WALLPAPER = HOME / ".local/state/caelestia/wallpaper/path.txt"
+OUT = Path(os.getenv("XDG_CACHE_HOME", HOME / ".cache")) / "wal/colors.json"
+
+# pywal slot -> caelestia colour, on top of term0..term15
+SLOTS = {
+    "dark": {0: "surface", 7: "onSurfaceVariant", 8: "outline", 10: "primary", 13: "tertiary", 15: "onSurface"},
+    "light": {0: "onSurface", 3: "primary", 5: "tertiary", 7: "surfaceContainerHigh", 15: "surface"},
+}
+
+
+def main() -> None:
+    try:
+        scheme = json.loads(SCHEME.read_text())
+    except (OSError, ValueError) as e:
+        sys.exit(f"cannot read {SCHEME}: {e}")
+    c = scheme["colours"]
+    mode = scheme.get("mode", "dark")
+
+    slots = {i: c[f"term{i}"] for i in range(16)}
+    slots.update({i: c[name] for i, name in SLOTS.get(mode, SLOTS["dark"]).items()})
+    try:
+        wallpaper = WALLPAPER.read_text().strip()
+    except OSError:
+        wallpaper = ""
+
+    palette = {
+        "wallpaper": wallpaper,
+        "alpha": "100",
+        "special": {"background": f"#{slots[0]}", "foreground": f"#{slots[15]}", "cursor": f"#{slots[15]}"},
+        "colors": {f"color{i}": f"#{slots[i]}" for i in range(16)},
+    }
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    tmp = OUT.with_suffix(".tmp")
+    tmp.write_text(json.dumps(palette, indent=4) + "\n")
+    tmp.replace(OUT)
+
+    # fails quietly when Firefox (and with it the daemon) is not running; the extension reads the file on start
+    pywalfox = shutil.which("pywalfox") or str(HOME / ".local/bin/pywalfox")
+    if Path(pywalfox).exists():
+        for action in ("update", "light" if mode == "light" else "dark"):
+            subprocess.run([pywalfox, action], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+
+
+if __name__ == "__main__":
+    main()
