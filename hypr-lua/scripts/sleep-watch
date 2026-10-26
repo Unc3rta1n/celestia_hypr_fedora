@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# Before suspend: disable the monitors wired to the NVIDIA dGPU (HDMI on this laptop).
+# After resume:   `hyprctl reload` brings them back from monitors.lua, then force a repaint.
+# Suspending with an active NVIDIA output froze the session on resume
+# ("nvidia-drm: Flip event timeout on head 0"): the caelestia lock stayed on its first frame
+# and nothing reacted. With no NVIDIA output during sleep there is nothing to flip on resume.
+# Started once from lua/autostart.lua (inherits HYPRLAND_INSTANCE_SIGNATURE).
+set -uo pipefail
+
+inhibitor=
+disabled=0
+
+hold_sleep() { # delay lock: logind waits (InhibitDelayMaxSec, 5 s) until we release it
+    systemd-inhibit --what=sleep --mode=delay --who=sleep-watch \
+        --why="Disable NVIDIA outputs before sleep" sleep infinity &
+    inhibitor=$!
+}
+
+nvidia_outputs() { # connected connectors of the NVIDIA card, e.g. HDMI-A-1
+    local c name
+    for c in /sys/class/drm/card*-*; do
+        [[ $(<"$c/status") == connected ]] || continue
+        [[ $(basename "$(readlink -f "$c/device/device/driver")") == nvidia ]] || continue
+        name=${c##*/}
+        echo "${name#card*-}"
+    done
+}
+
+before_sleep() {
+    local out
+    disabled=0
+    for out in $(nvidia_outputs); do
+        hyprctl eval "hl.monitor({ output = \"$out\", disabled = true })" >/dev/null && disabled=1
+    done
+}
+
+after_resume() {
+    # nvidia-resume.service runs after logind reports the wake-up; let it finish first
+    while systemctl list-jobs --no-legend 2>/dev/null | grep -q nvidia-resume; do sleep 0.5; done
+    sleep 1
+    ((disabled)) && hyprctl reload >/dev/null
+    # Hyprland doesn't repaint after resume until some input: the lock stays on its first frame
+    hyprctl eval 'hl.dispatch(hl.dsp.force_renderer_reload())' >/dev/null
+}
+
+hold_sleep
+while read -r line; do
+    case $line in
+    *"PrepareForSleep (true,)"*)
+        before_sleep
+        kill "$inhibitor" 2>/dev/null
+        ;;
+    *"PrepareForSleep (false,)"*)
+        hold_sleep
+        after_resume
+        ;;
+    esac
+done < <(gdbus monitor --system --dest org.freedesktop.login1 --object-path /org/freedesktop/login1)

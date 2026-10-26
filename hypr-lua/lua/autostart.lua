@@ -28,6 +28,8 @@ hl.on("hyprland.start", function()
     hl.exec_cmd(v.scriptsDir .. "/nightlight-schedule")
     -- charger plug/unplug -> battery saver (lua/power.lua) + power profile
     hl.exec_cmd(v.scriptsDir .. "/power-watch")
+    -- suspend: NVIDIA (HDMI) monitors off before sleep, back after resume (resume froze otherwise)
+    hl.exec_cmd(v.scriptsDir .. "/sleep-watch")
 
     -- Clipboard history (caelestia clipboard reads cliphist)
     hl.exec_cmd("wl-paste --type text --watch cliphist store")
