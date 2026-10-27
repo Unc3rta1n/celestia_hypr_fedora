@@ -37,8 +37,10 @@ hl.on("hyprland.start", function()
     -- Clipboard history (caelestia clipboard reads cliphist)
     hl.exec_cmd("wl-paste --type text --watch cliphist store")
     hl.exec_cmd("wl-paste --type image --watch cliphist store")
-    -- keep the clipboard alive after the app that copied it closes
-    hl.exec_cmd("command -v wl-clip-persist >/dev/null && wl-clip-persist --clipboard regular || ~/.cargo/bin/wl-clip-persist --clipboard regular")
+    -- keep the clipboard alive after the app that copied it closes. Skip events that offer image/*:
+    -- Telegram offers ~35 image formats and encodes each lazily on its main thread, so persisting them froze it
+    -- (the regex matches every MIME type that does not start with "image/")
+    hl.exec_cmd([[wl-clip-persist --clipboard regular --all-mime-type-regex '^([^i]|i([^m]|m([^a]|a([^g]|g([^e]|e[^/])))))' 2>/dev/null || ~/.cargo/bin/wl-clip-persist --clipboard regular --all-mime-type-regex '^([^i]|i([^m]|m([^a]|a([^g]|g([^e]|e[^/])))))']])
     -- automount USB drives with a notification (no tray icon)
     hl.exec_cmd("command -v udiskie >/dev/null && udiskie --automount --notify --no-tray")
 end)
