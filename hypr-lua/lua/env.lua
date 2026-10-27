@@ -47,3 +47,8 @@ hl.env("__GL_GSYNC_ALLOWED", "0")
 
 -- User
 hl.env("VMWARE_USE_SHIPPED_LIBS", "1")
+
+-- SSH passwords from GNOME Keyring (ssh-menu, Super+C, execs ssh directly
+-- via ghostty -e, bypassing zsh/extras.zsh -- must be set compositor-wide)
+hl.env("SSH_ASKPASS", HOME .. "/.local/bin/ssh-askpass-keyring")
+hl.env("SSH_ASKPASS_REQUIRE", "force")
