@@ -4,12 +4,15 @@
 # Suspending with an active NVIDIA output froze the session on resume
 # ("nvidia-drm: Flip event timeout on head 0"): the caelestia lock stayed on its first frame
 # and nothing reacted. With no NVIDIA output during sleep there is nothing to flip on resume.
+# Telegram (Qt) keeps a buffer of the wrong orientation after its rotated monitor comes back;
+# pulling it through the Super+` scratchpad and back makes Hyprland resend size and transform.
 # Started once from lua/autostart.lua (inherits HYPRLAND_INSTANCE_SIGNATURE).
 set -uo pipefail
 
 log=/tmp/sleep-watch.log
 inhibitor=
 disabled=0
+off_outputs=()
 
 log() { echo "$(date +%T.%3N) $*" >>"$log"; }
 
@@ -40,11 +43,28 @@ nvidia_outputs() { # connected connectors of the NVIDIA card, e.g. HDMI-A-1
 before_sleep() {
     local out
     disabled=0
+    off_outputs=()
     log "before_sleep: nvidia outputs: $(nvidia_outputs | tr '\n' ' ')"
     for out in $(nvidia_outputs); do
-        hc eval "hl.monitor({ output = \"$out\", disabled = true })" && disabled=1
+        hc eval "hl.monitor({ output = \"$out\", disabled = true })" && { disabled=1; off_outputs+=("$out"); }
     done
     log "before_sleep: done disabled=$disabled"
+}
+
+nudge_telegram() { # re-pull Telegram if it sits on a monitor that was disabled during sleep
+    local mon out id
+    mon=$(timeout 5 hyprctl clients -j | jq -r '.[] | select(.class == "org.telegram.desktop"
+        and (.workspace.name | startswith("special") | not)) | .monitor') || return 0
+    [[ -n $mon ]] || return 0
+    for out in "${off_outputs[@]}"; do
+        id=$(timeout 5 hyprctl monitors -j | jq -r --arg o "$out" '.[] | select(.name == $o) | .id')
+        [[ $id == "$mon" ]] || continue
+        log "nudge_telegram: on $out"
+        hc eval 'require("lua.scratchpad").toggle()'
+        sleep 0.4
+        hc eval 'require("lua.scratchpad").toggle()'
+        return 0
+    done
 }
 
 after_resume() {
@@ -57,6 +77,7 @@ after_resume() {
     ((disabled)) && hc reload
     # Hyprland doesn't repaint after resume until some input: the lock stays on its first frame
     hc eval 'hl.dispatch(hl.dsp.force_renderer_reload())'
+    nudge_telegram
     log "after_resume: done"
 }
 
