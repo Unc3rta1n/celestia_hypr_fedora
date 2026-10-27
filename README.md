@@ -53,6 +53,7 @@ A patch that no longer applies stops it before anything is installed. Rollback:
 | `caelestia/` | `~/.config/caelestia/{shell,cli}.json` (copied only if missing) |
 | `systemd/` | `caelestia-kde-colors.path`: KDE apps follow the caelestia scheme; `caelestia-pywalfox.path`: Firefox follows it via Pywalfox (see below); `10-lid-suspend.conf`: lid suspends even with external monitors (installed by `setup-desktop.sh`) |
 | `vscode/` | caelestia's VS Code extension (theme "Caelestia") |
+| `dnf/` | `snapper.actions`: snapper pre/post snapshots around dnf5 transactions (installed by `setup-desktop.sh`, needs `libdnf5-plugin-actions`) |
 | `zsh/` | shell setup copies: `zshrc` -> `~/.zshrc`, `extras.zsh` + `cheatsheet.txt` -> `~/.config/zsh/`, `starship.toml` -> `~/.config/`, `atuin-config.toml` -> `~/.config/atuin/config.toml`, `fastfetch-config-mini.jsonc` -> `~/.config/fastfetch/config-mini.jsonc` (see below) |
 
 ## Patches

@@ -31,6 +31,9 @@ hl.on("hyprland.start", function()
     -- suspend: NVIDIA (HDMI) monitors off before sleep, back after resume (resume froze otherwise)
     hl.exec_cmd(v.scriptsDir .. "/sleep-watch")
 
+    -- KDE Connect tray icon only while a phone is connected
+    hl.exec_cmd(v.scriptsDir .. "/kdeconnect-watch")
+
     -- Clipboard history (caelestia clipboard reads cliphist)
     hl.exec_cmd("wl-paste --type text --watch cliphist store")
     hl.exec_cmd("wl-paste --type image --watch cliphist store")

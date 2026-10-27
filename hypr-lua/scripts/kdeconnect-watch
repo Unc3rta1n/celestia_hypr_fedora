@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# KDE Connect tray icon only while a paired phone is reachable: start kdeconnect-indicator when one
+# shows up, kill it when the last one goes away. Started once from lua/autostart.lua.
+set -uo pipefail
+
+POLL_SECONDS=10
+
+reachable() { [[ -n $(kdeconnect-cli --list-available --id-only 2>/dev/null) ]]; }
+running() { pgrep -f '^kdeconnect-indicator' >/dev/null; }
+
+while true; do
+    if reachable; then
+        running || kdeconnect-indicator >/dev/null 2>&1 &
+    else
+        running && pkill -f '^kdeconnect-indicator'
+    fi
+    sleep "$POLL_SECONDS"
+done

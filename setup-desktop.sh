@@ -77,6 +77,10 @@ if ! cmp -s "$HERE"/systemd/10-lid-suspend.conf "$lid"; then
     sudo systemctl kill -s HUP systemd-logind  # reload config without ending the session
 fi
 
+step "dnf5: snapper pre/post snapshots around transactions (sudo)"
+rpm -q libdnf5-plugin-actions >/dev/null || sudo dnf install -y libdnf5-plugin-actions
+sudo install -Dm644 "$HERE"/dnf/snapper.actions /etc/dnf/libdnf5-plugins/actions.d/snapper.actions
+
 step "workspace overview (Super+A)"
 ov=$HOME/.config/quickshell/overview
 [[ -d $ov/.git ]] || git clone https://github.com/Shanu-Kumawat/quickshell-overview "$ov"
