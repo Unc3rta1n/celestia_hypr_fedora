@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# SSH_ASKPASS helper: looks up passwords stored in GNOME Keyring
+# (service "ssh-moba", attributes host/user) instead of popping a GUI dialog.
+# Populated from the MobaXterm password export on 2026-10-27.
+#
+# ssh calls this as: ssh-askpass-keyring "user@host's password: "
+# With SSH_ASKPASS_REQUIRE=force ssh never prompts on the terminal itself,
+# so anything not found in the keyring is asked on /dev/tty here.
+set -uo pipefail
+
+prompt="${1:-}"
+
+# Ask on the controlling terminal like plain ssh would.
+# $1 = "silent" hides input (passwords, passphrases).
+ask_tty() {
+    { : >/dev/tty; } 2>/dev/null || exit 1
+    local answer
+    if [ "$1" = silent ]; then
+        IFS= read -rs -p "$prompt" answer </dev/tty 2>/dev/tty || exit 1
+        printf '\n' >/dev/tty
+    else
+        IFS= read -r -p "$prompt" answer </dev/tty 2>/dev/tty || exit 1
+    fi
+    printf '%s\n' "$answer"
+    exit 0
+}
+
+# Extract "user@host" out of "user@host's password: "
+uh="${prompt%\'s password:*}"
+if [ "$uh" = "$prompt" ] || [ -z "$uh" ]; then
+    # Not a password prompt: host key yes/no, key passphrase, etc.
+    case "$prompt" in
+        *assphrase*|*PIN*) ask_tty silent ;;
+        *) ask_tty visible ;;
+    esac
+fi
+
+user="${uh%@*}"
+host="${uh#*@}"
+
+if pw="$(secret-tool lookup service ssh-moba host "$host" user "$user" 2>/dev/null)" && [ -n "$pw" ]; then
+    printf '%s\n' "$pw"
+    exit 0
+fi
+ask_tty silent

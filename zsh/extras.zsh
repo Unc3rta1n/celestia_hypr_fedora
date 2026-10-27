@@ -36,6 +36,12 @@ command -v lazygit >/dev/null && alias lg='lazygit'
 # ghostty's TERM is unknown on most remote hosts (backspace/colours break over ssh)
 alias ssh='TERM=xterm-256color ssh'
 
+# --- SSH passwords from GNOME Keyring (imported from MobaXterm, 2026-10-27) ---
+# SSH_ASKPASS_REQUIRE=force makes ssh use the askpass helper even with a
+# controlling tty (needs OpenSSH >=8.4). Lookup: ~/.local/bin/ssh-askpass-keyring
+export SSH_ASKPASS="$HOME/.local/bin/ssh-askpass-keyring"
+export SSH_ASKPASS_REQUIRE=force
+
 # --- global aliases: `cmd G pat`, `cmd L`, `cmd C` ---
 alias -g G='| grep -i'
 alias -g L='| less'
