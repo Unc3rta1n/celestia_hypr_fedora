@@ -7,8 +7,19 @@
 # Started once from lua/autostart.lua (inherits HYPRLAND_INSTANCE_SIGNATURE).
 set -uo pipefail
 
+log=/tmp/sleep-watch.log
 inhibitor=
 disabled=0
+
+log() { echo "$(date +%T.%3N) $*" >>"$log"; }
+
+hc() { # hyprctl with a timeout: a hung Hyprland must not hang this script too
+    local rc
+    timeout 5 hyprctl "$@" >/dev/null
+    rc=$?
+    log "hyprctl $1 rc=$rc"
+    return $rc
+}
 
 hold_sleep() { # delay lock: logind waits (InhibitDelayMaxSec, 5 s) until we release it
     systemd-inhibit --what=sleep --mode=delay --who=sleep-watch \
@@ -29,28 +40,36 @@ nvidia_outputs() { # connected connectors of the NVIDIA card, e.g. HDMI-A-1
 before_sleep() {
     local out
     disabled=0
+    log "before_sleep: nvidia outputs: $(nvidia_outputs | tr '\n' ' ')"
     for out in $(nvidia_outputs); do
-        hyprctl eval "hl.monitor({ output = \"$out\", disabled = true })" >/dev/null && disabled=1
+        hc eval "hl.monitor({ output = \"$out\", disabled = true })" && disabled=1
     done
+    log "before_sleep: done disabled=$disabled"
 }
 
 after_resume() {
+    log "after_resume: start"
     # nvidia-resume.service runs after logind reports the wake-up; let it finish first
     while systemctl list-jobs --no-legend 2>/dev/null | grep -q nvidia-resume; do sleep 0.5; done
+    log "after_resume: nvidia-resume finished"
     sleep 1
-    ((disabled)) && hyprctl reload >/dev/null
+    log "after_resume: connected now: $(for c in /sys/class/drm/card*-*; do [[ $(<"$c/status") == connected ]] && printf '%s ' "${c##*/}"; done)"
+    ((disabled)) && hc reload
     # Hyprland doesn't repaint after resume until some input: the lock stays on its first frame
-    hyprctl eval 'hl.dispatch(hl.dsp.force_renderer_reload())' >/dev/null
+    hc eval 'hl.dispatch(hl.dsp.force_renderer_reload())'
+    log "after_resume: done"
 }
 
 hold_sleep
 while read -r line; do
     case $line in
     *"PrepareForSleep (true,)"*)
+        log "PrepareForSleep true"
         before_sleep
         kill "$inhibitor" 2>/dev/null
         ;;
     *"PrepareForSleep (false,)"*)
+        log "PrepareForSleep false"
         hold_sleep
         after_resume
         ;;
