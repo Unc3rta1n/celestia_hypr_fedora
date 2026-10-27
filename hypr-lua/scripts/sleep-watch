@@ -52,7 +52,7 @@ before_sleep() {
 }
 
 nudge_telegram() { # re-pull Telegram if it sits on a monitor that was disabled during sleep
-    local mon out id
+    local mon out id prev
     mon=$(timeout 5 hyprctl clients -j | jq -r '.[] | select(.class == "org.telegram.desktop"
         and (.workspace.name | startswith("special") | not)) | .monitor') || return 0
     [[ -n $mon ]] || return 0
@@ -60,9 +60,12 @@ nudge_telegram() { # re-pull Telegram if it sits on a monitor that was disabled 
         id=$(timeout 5 hyprctl monitors -j | jq -r --arg o "$out" '.[] | select(.name == $o) | .id')
         [[ $id == "$mon" ]] || continue
         log "nudge_telegram: on $out"
+        # toggle() focuses Telegram; a focused Telegram thinks it is active and skips popups
+        prev=$(timeout 5 hyprctl activewindow -j | jq -r '.address // empty')
         hc eval 'require("lua.scratchpad").toggle()'
         sleep 0.4
         hc eval 'require("lua.scratchpad").toggle()'
+        [[ -z $prev ]] || hc eval "hl.dispatch(hl.dsp.focus({ window = \"address:$prev\" }))"
         return 0
     done
 }
