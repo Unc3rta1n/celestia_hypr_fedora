@@ -14,7 +14,7 @@ index c4b888b0..a905c3f0 100644
  
      property int nowPlayingArtTries: 0
      readonly property int nowPlayingArtMaxTries: 8
-+    readonly property int nowPlayingToastTimeout: 1000 // ms
++    readonly property int nowPlayingToastTimeout: 1750 // ms
  
      Timer {
          id: nowPlayingArtWait

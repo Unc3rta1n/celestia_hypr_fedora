@@ -106,7 +106,8 @@ Super+Ctrl+Shift+R pause.
 36. bar `gpu` entry: NVIDIA dGPU load % and temperature while it is busy (>=5 % or >=8 W); polled only while the card is runtime-active, so it is never woken
 37. now-playing toast shows the track cover instead of the music note (`ToastItem` renders the `icon` as an image when it is a file/http URL; `Players` passes `getArtUrl`)
 38. dashboard lyrics fallback: when LRCLIB finds nothing, `LyricList` shows plain lyrics from the Yandex Music catalogue (`Players.getLyrics`: search, then `/tracks/{id}/supplement`, no auth); untimed, so no highlight or click-to-seek
-39. now-playing toast lasts 1 s (`Players.nowPlayingToastTimeout`) instead of the default 5 s
+39. now-playing toast lasts 1.75 s (`Players.nowPlayingToastTimeout`) instead of the default 5 s
+40. now-playing toast is compact: one line `artist - title` with a small cover, no "Now playing" title (`ToastItem.compact` also true for `music_note`/cover icons)
 
 ## zsh
 

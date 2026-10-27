@@ -1,0 +1,35 @@
+diff --git a/modules/utilities/toasts/ToastItem.qml b/modules/utilities/toasts/ToastItem.qml
+index 43588adb..a662424d 100644
+--- a/modules/utilities/toasts/ToastItem.qml
++++ b/modules/utilities/toasts/ToastItem.qml
+@@ -12,10 +12,10 @@ StyledRect {
+     id: root
+ 
+     required property Toast modelData
+-    // keyboard layout toast: one line with just the layout name, sized to its text
+-    readonly property bool compact: modelData.icon === "keyboard"
+     // the icon field carries a cover url for the now-playing toast
+     readonly property bool hasCover: /^(file|https?):\/\//.test(modelData.icon)
++    // keyboard layout and now-playing toasts: one line without the title, sized to its text
++    readonly property bool compact: modelData.icon === "keyboard" || modelData.icon === "music_note" || hasCover
+ 
+     anchors.left: compact ? undefined : parent.left
+     anchors.right: parent.right
+@@ -76,7 +76,7 @@ StyledRect {
+ 
+             implicitWidth: implicitHeight
+             implicitHeight: icon.implicitHeight + (root.compact ? Tokens.padding.small : Tokens.padding.large)
+-            Layout.preferredHeight: root.hasCover ? implicitHeight * 1.3 : implicitHeight
++            Layout.preferredHeight: root.hasCover && !root.compact ? implicitHeight * 1.3 : implicitHeight
+             Layout.preferredWidth: Layout.preferredHeight
+ 
+             ClippingRectangle {
+@@ -142,7 +142,7 @@ StyledRect {
+                 text: {
+                     const msg = Tr.trMarked(root.modelData.message);
+                     // "Layout changed to: Russian" -> "Russian"
+-                    return root.compact ? msg.slice(msg.lastIndexOf(":") + 1).trim() : msg;
++                    return root.modelData.icon === "keyboard" ? msg.slice(msg.lastIndexOf(":") + 1).trim() : msg;
+                 }
+                 color: {
+                     if (root.modelData.type === Toast.Success)
