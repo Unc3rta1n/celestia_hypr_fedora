@@ -1,0 +1,60 @@
+diff --git a/modules/notifications/Notification.qml b/modules/notifications/Notification.qml
+index 9faf5cab..5bd0e427 100644
+--- a/modules/notifications/Notification.qml
++++ b/modules/notifications/Notification.qml
+@@ -493,7 +493,7 @@ StyledRect {
+ 
+                 animate: true
+                 textFormat: root.bodyTextFormat
+-                text: root.modelData?.body
++                text: Strings.htmlToMarkdown(root.modelData?.body ?? "")
+                 color: Colours.palette.m3onSurfaceVariant
+                 font: Tokens.font.body.small
+                 wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+diff --git a/modules/sidebar/Notif.qml b/modules/sidebar/Notif.qml
+index 6fb99482..753f2200 100644
+--- a/modules/sidebar/Notif.qml
++++ b/modules/sidebar/Notif.qml
+@@ -137,7 +137,7 @@ StyledRect {
+ 
+             Layout.fillWidth: true
+             textFormat: Text.MarkdownText
+-            text: String(root.modelData?.body ?? "").replace(/(.)\n(?!\n)/g, "$1\n\n") || Tr.tr("No body here! :/")
++            text: Strings.htmlToMarkdown(String(root.modelData?.body ?? "")).replace(/(.)\n(?!\n)/g, "$1\n\n") || Tr.tr("No body here! :/")
+             color: root.modelData?.urgency === "critical" ? Colours.palette.m3secondary : Colours.palette.m3outline
+             wrapMode: Text.WordWrap
+ 
+diff --git a/services/Notifs.qml b/services/Notifs.qml
+index d4ddc8d8..0a043a25 100644
+--- a/services/Notifs.qml
++++ b/services/Notifs.qml
+@@ -110,6 +110,10 @@ Singleton {
+         persistenceSupported: true
+ 
+         onNotification: notif => {
++            // Telegram Desktop already notifies; drop the phone copy KDE Connect mirrors.
++            if (notif.appName === "KDE Connect" && notif.summary === "Telegram" && Hypr.toplevels.values.some(t => t.lastIpcObject?.class === "org.telegram.desktop"))
++                return;
++
+             notif.tracked = true;
+ 
+             const comp = notifComp.createObject(root, {
+diff --git a/utils/Strings.qml b/utils/Strings.qml
+index 8b5efb68..d8225175 100644
+--- a/utils/Strings.qml
++++ b/utils/Strings.qml
+@@ -21,6 +21,14 @@ Singleton {
+         return text.replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, "").replace(/&(?:nbsp|#160);/gi, " ").replace(/&(?:quot|#34);/gi, '"').replace(/&(?:apos|#39);/gi, "'").replace(/&(?:lt|#60);/gi, "<").replace(/&(?:gt|#62);/gi, ">").replace(/&(?:amp|#38);/gi, "&").replace(/[ \t]+/g, " ").trim();
+     }
+ 
++    // Markdown has no <b>/<i>/<a>: Qt shows them verbatim, so translate the
++    // freedesktop subset (KDE Connect forwards Telegram titles as <b>..</b>).
++    function htmlToMarkdown(text: string): string {
++        if (!hasMarkup(text))
++            return text;
++        return text.replace(/<br\s*\/?>/gi, "\n").replace(/<(b|strong)>([\s\S]*?)<\/\1>/gi, "**$2**").replace(/<(i|em)>([\s\S]*?)<\/\1>/gi, "*$2*").replace(/<a\s[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, "[$2]($1)").replace(/<\/?(u|p|span|small|big)[^>]*>/gi, "").replace(/&(?:nbsp|#160);/gi, " ").replace(/&(?:quot|#34);/gi, '"').replace(/&(?:apos|#39);/gi, "'").replace(/&(?:lt|#60);/gi, "<").replace(/&(?:gt|#62);/gi, ">").replace(/&(?:amp|#38);/gi, "&");
++    }
++
+     function percent(value: int): string {
+         // TRANSLATORS: %1 = a number
+         return Tr.tr("%1%").arg(value);

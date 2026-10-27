@@ -109,6 +109,7 @@ Super+Ctrl+Shift+R pause.
 38. dashboard lyrics fallback: when LRCLIB finds nothing, `LyricList` shows plain lyrics from the Yandex Music catalogue (`Players.getLyrics`: search, then `/tracks/{id}/supplement`, no auth); untimed, so no highlight or click-to-seek
 39. now-playing toast lasts 1.75 s (`Players.nowPlayingToastTimeout`) instead of the default 5 s
 40. now-playing toast is compact: one line `artist - title` with a small cover, no "Now playing" title (`ToastItem.compact` also true for `music_note`/cover icons)
+41. notification bodies: `<b>/<i>/<a>` converted to markdown (KDE Connect forwards Telegram titles as HTML, shown verbatim before); KDE Connect copy of a Telegram notification dropped while Telegram Desktop is running (double popups)
 
 ## zsh
 
