@@ -1,0 +1,80 @@
+diff --git a/modules/nexus/pages/panels/UtilitiesPanel.qml b/modules/nexus/pages/panels/UtilitiesPanel.qml
+index 58630372..c23c4b11 100644
+--- a/modules/nexus/pages/panels/UtilitiesPanel.qml
++++ b/modules/nexus/pages/panels/UtilitiesPanel.qml
+@@ -126,6 +126,14 @@ PageBase {
+             onToggled: root.setToggleOn("gameMode", checked)
+         }
+ 
++        ToggleRow {
++            text: Tr.tr("Night light")
++            subtext: Tr.tr("Toggle hyprsunset")
++            disabled: !Config.utilities.cards.quickToggles
++            checked: root.isToggleOn("nightLight")
++            onToggled: root.setToggleOn("nightLight", checked)
++        }
++
+         ToggleRow {
+             text: Tr.tr("Do not disturb")
+             subtext: Tr.tr("Silence notifications")
+diff --git a/modules/utilities/cards/Toggles.qml b/modules/utilities/cards/Toggles.qml
+index 6cf1669c..1ff77a35 100644
+--- a/modules/utilities/cards/Toggles.qml
++++ b/modules/utilities/cards/Toggles.qml
+@@ -2,7 +2,9 @@ pragma ComponentBehavior: Bound
+ 
+ import QtQuick
+ import QtQuick.Layouts
++import Quickshell
+ import Quickshell.Bluetooth
++import Quickshell.Io
+ import Caelestia.Components
+ import Caelestia.Config
+ import Caelestia.I18n
+@@ -10,6 +12,7 @@ import Caelestia.State
+ import qs.components
+ import qs.components.controls
+ import qs.services
++import qs.utils
+ import qs.modules.nexus
+ import qs.modules.bar.popouts as BarPopouts
+ 
+@@ -35,6 +38,8 @@ StyledRect {
+             return true;
+         });
+     }
++    // Night light state as written by ~/.config/hypr/scripts/Hyprsunset.sh ("on"/"off")
++    property bool nightLight: false
+     readonly property int splitIndex: Math.ceil(quickToggles.length / 2)
+     readonly property bool needExtraRow: quickToggles.length > 6
+ 
+@@ -65,6 +70,14 @@ StyledRect {
+         }
+     }
+ 
++    FileView {
++        path: `${Paths.home}/.cache/.hyprsunset_state`
++        watchChanges: true
++        printErrors: false
++        onFileChanged: reload()
++        onLoaded: root.nightLight = text().trim() === "on"
++    }
++
+     component QuickToggleRow: ButtonRow {
+         property alias model: repeater.model
+ 
+@@ -137,6 +150,14 @@ StyledRect {
+                         onClicked: PersistentState.wallpaperPlaying = !PersistentState.wallpaperPlaying
+                     }
+                 }
++                DelegateChoice {
++                    roleValue: "nightLight"
++                    delegate: Toggle {
++                        icon: "nightlight"
++                        checked: root.nightLight
++                        onClicked: Quickshell.execDetached([`${Paths.home}/.config/hypr/scripts/Hyprsunset.sh`, "toggle"])
++                    }
++                }
+                 DelegateChoice {
+                     roleValue: "dnd"
+                     delegate: Toggle {
