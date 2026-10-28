@@ -1,0 +1,32 @@
+diff --git a/services/Players.qml b/services/Players.qml
+index bd4c81cb..7f3831fb 100644
+--- a/services/Players.qml
++++ b/services/Players.qml
+@@ -13,7 +13,9 @@ Singleton {
+     id: root
+ 
+     readonly property list<MprisPlayer> list: Mpris.players.values
+-    readonly property MprisPlayer active: props.manualActive ?? list.find(p => getIdentity(p) === GlobalConfig.services.defaultPlayer) ?? list[0] ?? null
++    // A phone connected through KDE Connect exposes its (often paused) player too and may come first,
++    // hiding the local one. Prefer whatever is playing, then the default player, then local players.
++    readonly property MprisPlayer active: props.manualActive ?? pickActive(list)
+     property alias manualActive: props.manualActive
+ 
+     // Dedup key for progressive metadata (e.g. mpv-mpris/yt-dlp player fills title then artist later).
+@@ -21,6 +23,16 @@ Singleton {
+     property real lastNowPlayingAt: 0
+     readonly property int nowPlayingRepeatFallback: 600000 // ms, players without a track length
+ 
++    function isRemote(player: MprisPlayer): bool {
++        return player?.dbusName.includes(".kdeconnect.") ?? false;
++    }
++
++    function pickActive(players: list<MprisPlayer>): MprisPlayer {
++        const isDefault = p => getIdentity(p) === GlobalConfig.services.defaultPlayer;
++        const playing = players.filter(p => p.isPlaying);
++        return playing.find(isDefault) ?? playing.find(p => !isRemote(p)) ?? playing[0] ?? players.find(isDefault) ?? players.find(p => !isRemote(p)) ?? players[0] ?? null;
++    }
++
+     function getIdentity(player: MprisPlayer): string {
+         if (!player)
+             return "";
