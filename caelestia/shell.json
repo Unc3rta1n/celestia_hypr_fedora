@@ -154,7 +154,7 @@
       },
       {
         "id": "activeWindow",
-        "enabled": true
+        "enabled": false
       },
       {
         "id": "spacer",
@@ -633,7 +633,8 @@
           "regex": "^([^>]*(xfreerdp|wlfreerdp|sdl-freerdp)[^>]*)$",
           "icon": "󰢹"
         }
-      ]
+      ],
+      "shown": 8
     }
   },
   "notifs": {
