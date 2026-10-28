@@ -1,0 +1,32 @@
+diff --git a/modules/bar/components/workspaces/Workspace.qml b/modules/bar/components/workspaces/Workspace.qml
+index 0ecf6872..1de7ae22 100644
+--- a/modules/bar/components/workspaces/Workspace.qml
++++ b/modules/bar/components/workspaces/Workspace.qml
+@@ -31,6 +31,8 @@ Item {
+     readonly property bool isOccupied: toplevels.length > 0
+     readonly property bool hasWindows: isOccupied && showWindows && Config.bar.workspaces.maxWindowIcons > 0
+     readonly property bool focused: activeWsId === ws
++    // Window icons already mark an occupied workspace: drop its indicator row to save bar height
++    readonly property bool compact: hasWindows && !focused
+     readonly property list<int> focusedShapeList: [MaterialShape.Slanted, MaterialShape.Oval, MaterialShape.Pill, MaterialShape.Triangle, MaterialShape.Arrow, MaterialShape.Diamond, MaterialShape.Pentagon, MaterialShape.Gem, MaterialShape.VerySunny, MaterialShape.Sunny, MaterialShape.Cookie4Sided, MaterialShape.Cookie6Sided, MaterialShape.Cookie7Sided, MaterialShape.Cookie9Sided, MaterialShape.Cookie12Sided, MaterialShape.Clover4Leaf, MaterialShape.SoftBurst, MaterialShape.Ghostish]
+ 
+     property color offMonitorColour: Colours.palette.m3outlineVariant
+@@ -182,7 +184,8 @@ Item {
+             id: indicator
+ 
+             Layout.alignment: Qt.AlignHCenter | Qt.AlignTop
+-            Layout.preferredHeight: Tokens.sizes.bar.innerWidth - Tokens.padding.small
++            Layout.preferredHeight: root.compact ? Tokens.spacing.small : Tokens.sizes.bar.innerWidth - Tokens.padding.small
++            opacity: root.compact ? 0 : 1
+             sourceComponent: {
+                 if (root.displayType === BarWorkspaceDisplay.Icons)
+                     return iconLoaderComponent;
+@@ -200,7 +203,7 @@ Item {
+             asynchronous: true
+ 
+             Layout.fillWidth: true
+-            Layout.topMargin: -Tokens.spacing.extraSmall / 2
++            Layout.topMargin: root.compact ? 0 : -Tokens.spacing.extraSmall / 2
+             Layout.preferredHeight: root.hasWindows && item ? (item as LazyListView).layoutHeight : 0
+ 
+             visible: active
