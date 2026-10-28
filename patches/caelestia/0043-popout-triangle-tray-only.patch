@@ -1,0 +1,18 @@
+diff --git a/modules/drawers/Interactions.qml b/modules/drawers/Interactions.qml
+index c4ff16a6..989f269e 100644
+--- a/modules/drawers/Interactions.qml
++++ b/modules/drawers/Interactions.qml
+@@ -29,7 +29,12 @@ CustomMouseArea {
+     property point aimApex
+ 
+     function aimingAtPopout(x: real, y: real): bool {
+-        if (!popouts.hasCurrent)
++        // Only the tray menu (with submenus) is worth aiming at; status popouts are small and switching icons must stay instant
++        if (!popouts.hasCurrent || !popouts.currentName.startsWith("traymenu"))
++            return false;
++
++        // Moving along the bar (more vertical than horizontal) is not aiming at the popout
++        if (x - aimApex.x <= Math.abs(y - aimApex.y))
+             return false;
+ 
+         const panel = panels.popoutsWrapper;
