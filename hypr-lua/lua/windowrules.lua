@@ -1018,6 +1018,7 @@ hl.window_rule({
         tag = "games",
     },
     no_blur = true,
+    immediate = true,
     fullscreen = false,
 })
 

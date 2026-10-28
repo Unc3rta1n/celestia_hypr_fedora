@@ -34,6 +34,7 @@ hl.config({
     general = {
         resize_on_border = true,
         layout           = "dwindle",
+        allow_tearing    = true,
     },
     input = {
         kb_layout                   = "us,ru",
@@ -147,9 +148,6 @@ hl.config({
         numlock_by_default   = true,
         resolve_binds_by_sym = true,
         scroll_button        = 0,
-    },
-    misc = {
-        vrr = 0,
     },
     cursor = {
         no_warps                 = false,
