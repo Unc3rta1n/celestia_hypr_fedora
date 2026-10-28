@@ -1,0 +1,110 @@
+diff --git a/modules/areapicker/Picker.qml b/modules/areapicker/Picker.qml
+index 54d86c62..4412736a 100644
+--- a/modules/areapicker/Picker.qml
++++ b/modules/areapicker/Picker.qml
+@@ -17,6 +17,7 @@ MouseArea {
+     required property ShellScreen screen
+ 
+     property bool onClient
++    property bool instant
+ 
+     property real realBorderWidth: onClient ? (Hypr.options["general:border_size"] ?? 1) : 2
+     property real realRounding: onClient ? (Hypr.options["decoration:rounding"] ?? 0) : 0
+@@ -137,7 +138,14 @@ MouseArea {
+         opacity = 1;
+ 
+         const ipc = clients[0]?.lastIpcObject;
+-        if (ipc?.at && ipc?.size) {
++        if (Hypr.focusedMonitor?.name !== screen.name) {
++            // Other monitors start with no selection (all dimmed); hovering a window there selects it.
++            // Set without animation, otherwise the full-screen hole visibly shrinks to a point.
++            instant = true;
++            sx = ex = screen.width / 2;
++            sy = ey = screen.height / 2;
++            instant = false;
++        } else if (ipc?.at && ipc?.size) {
+             const cx = ipc.at[0] - screen.x;
+             const cy = ipc.at[1] - screen.y;
+             onClient = true;
+@@ -159,7 +167,7 @@ MouseArea {
+     }
+ 
+     onReleased: {
+-        if (closeAnim.running)
++        if (closeAnim.running || sw < 1 || sh < 1)
+             return;
+ 
+         if (root.loader.freeze) {
+@@ -171,6 +179,17 @@ MouseArea {
+         }
+     }
+ 
++    // Cursor moved to another monitor: drop the selection here so only one monitor shows one
++    onExited: {
++        if (pressed || closeAnim.running)
++            return;
++        onClient = false;
++        instant = true;
++        sx = ex = rsx + sw / 2;
++        sy = ey = rsy + sh / 2;
++        instant = false;
++    }
++
+     onPositionChanged: event => {
+         const x = event.x;
+         const y = event.y;
+@@ -189,6 +208,16 @@ MouseArea {
+     focus: true
+     Keys.onEscapePressed: closeAnim.start()
+ 
++    // Escape or a save on one monitor fades the picker out on all of them, not just that one
++    Connections {
++        target: root.loader
++
++        function onClosingChanged(): void {
++            if (root.loader.closing && !closeAnim.running)
++                closeAnim.start();
++        }
++    }
++
+     SequentialAnimation {
+         id: closeAnim
+ 
+@@ -297,6 +326,7 @@ MouseArea {
+         radius: root.realRounding > 0 ? root.realRounding + root.realBorderWidth : 0
+         border.width: root.realBorderWidth
+         border.color: Colours.palette.m3primary
++        opacity: root.sw >= 1 && root.sh >= 1 ? 1 : 0
+ 
+         x: selectionRect.x - root.realBorderWidth
+         y: selectionRect.y - root.realBorderWidth
+@@ -315,25 +345,25 @@ MouseArea {
+     }
+ 
+     Behavior on rsx {
+-        enabled: !root.pressed
++        enabled: !root.pressed && !root.instant
+ 
+         Anim {}
+     }
+ 
+     Behavior on rsy {
+-        enabled: !root.pressed
++        enabled: !root.pressed && !root.instant
+ 
+         Anim {}
+     }
+ 
+     Behavior on sw {
+-        enabled: !root.pressed
++        enabled: !root.pressed && !root.instant
+ 
+         Anim {}
+     }
+ 
+     Behavior on sh {
+-        enabled: !root.pressed
++        enabled: !root.pressed && !root.instant
+ 
+         Anim {}
+     }

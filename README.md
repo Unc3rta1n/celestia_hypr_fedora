@@ -112,6 +112,7 @@ Super+Ctrl+Shift+R pause.
 41. notification bodies: `<b>/<i>/<a>` converted to markdown (KDE Connect forwards Telegram titles as HTML, shown verbatim before); KDE Connect copy of a Telegram notification dropped while Telegram Desktop is running (double popups)
 42. active media player: a playing one wins, then `defaultPlayer`, then local players; a phone's KDE Connect player (often paused, listed first) no longer hides the browser
 43. safe triangle (19) only for tray menus and only when moving more horizontally than vertically; status-icon popouts switch instantly (moving down the bar left the old popout stuck for 300 ms)
+44. area picker: only the focused monitor preselects a window, the others start fully dimmed until hovered; the selection is dropped on the monitor the cursor leaves; Escape fades the picker out on all monitors at once
 
 ## zsh
 
