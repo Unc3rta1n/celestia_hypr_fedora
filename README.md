@@ -113,6 +113,7 @@ Super+Ctrl+Shift+R pause.
 42. active media player: a playing one wins, then `defaultPlayer`, then local players; a phone's KDE Connect player (often paused, listed first) no longer hides the browser
 43. safe triangle (19) only for tray menus and only when moving more horizontally than vertically; status-icon popouts switch instantly (moving down the bar left the old popout stuck for 300 ms)
 44. area picker: only the focused monitor preselects a window, the others start fully dimmed until hovered; the selection is dropped on the monitor the cursor leaves; Escape fades the picker out on all monitors at once
+45. right sidebar opens on hover over the whole right border (10px), not only its last 2px, so the cursor no longer has to slip onto the next monitor first; leaving the screen closes it even when it was opened from the outer border strip
 
 ## zsh
 

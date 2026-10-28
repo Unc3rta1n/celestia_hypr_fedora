@@ -1,0 +1,52 @@
+diff --git a/modules/drawers/Interactions.qml b/modules/drawers/Interactions.qml
+index 989f269e..0f489fe1 100644
+--- a/modules/drawers/Interactions.qml
++++ b/modules/drawers/Interactions.qml
+@@ -67,6 +67,13 @@ CustomMouseArea {
+         return x > Math.min(width - Config.border.minThickness, bar.implicitWidth + panel.x) && withinPanelHeight(panel, x, y);
+     }
+ 
++    // Top-right corner, bounded by notification panel height; the trigger is the whole border width,
++    // not 2px, so it opens before the cursor slips onto the next monitor
++    function inSidebarTrigger(x: real, y: real): bool {
++        const triggerY = Math.max(Config.sidebar.minHoverThreshold, panels.notifications.y + panels.notifications.height + borderThickness);
++        return x > Math.min(width - Math.max(Config.border.minThickness, borderThickness), bar.implicitWidth + panels.sidebar.x) && y <= triggerY;
++    }
++
+     function inTopPanel(panel: Item, x: real, y: real): bool {
+         const panelHeight = panel.height * (1 - (panel.offsetScale ?? 0)); // qmllint disable missing-property
+         return y < Math.max(Config.border.minThickness, Config.border.thickness + panelHeight) && withinPanelWidth(panel, x, y);
+@@ -159,10 +166,9 @@ CustomMouseArea {
+ 
+             const showSidebar = pressed && dragStart.x > Math.min(width - Config.border.minThickness, bar.implicitWidth + panels.sidebar.x);
+ 
+-            // Show sidebar on hover (top-right corner, bounded by notification panel height)
++            // Show sidebar on hover
+             if (Config.sidebar.showOnHover && Config.sidebar.enabled) {
+-                const sidebarTriggerY = Math.max(Config.sidebar.minHoverThreshold, panels.notifications.y + panels.notifications.height + borderThickness);
+-                const showSidebarHover = x > Math.min(width - Config.border.minThickness, bar.implicitWidth + panels.sidebar.x) && y <= sidebarTriggerY;
++                const showSidebarHover = inSidebarTrigger(x, y);
+                 if (showSidebarHover && !screenState.sidebar)
+                     screenState.sidebar = true;
+             }
+@@ -206,8 +212,7 @@ CustomMouseArea {
+ 
+             // Show/hide sidebar on hover
+             if (Config.sidebar.showOnHover && Config.sidebar.enabled && !pressed) {
+-                const sidebarTriggerY = Math.max(Config.sidebar.minHoverThreshold, panels.notifications.y + panels.notifications.height + borderThickness);
+-                const showSidebarHover = x > Math.min(width - Config.border.minThickness, bar.implicitWidth + panels.sidebar.x) && y <= sidebarTriggerY;
++                const showSidebarHover = inSidebarTrigger(x, y);
+                 if (showSidebarHover && !screenState.sidebar) {
+                     screenState.sidebar = true;
+                 } else if (!sidebarShortcutActive) {
+@@ -361,7 +366,9 @@ CustomMouseArea {
+             if (root.screenState.sidebar) {
+                 // Sidebar became visible, immediately check if this should be shortcut mode
+                 const inSidebarArea = root.inRightPanel(root.panels.sidebar, root.mouseX, root.mouseY) || root.inRightPanel(root.panels.sessionWrapper, root.mouseX, root.mouseY) || root.inRightPanel(root.panels.utilities, root.mouseX, root.mouseY);
+-                if (!inSidebarArea)
++                // Opened from the hover trigger (wider than inRightPanel's edge) is hover mode too, or leaving the screen won't close it
++                const inTrigger = root.containsMouse && root.inSidebarTrigger(root.mouseX, root.mouseY);
++                if (!inSidebarArea && !inTrigger)
+                     root.sidebarShortcutActive = true;
+             } else {
+                 // Sidebar hidden, clear shortcut flag
