@@ -15,7 +15,8 @@ hl.animation({ leaf = "windowsIn",   enabled = true, speed = 5,    bezier = "slo
 hl.animation({ leaf = "windowsOut",  enabled = true, speed = 5,    bezier = "winOut",   style = "popin" })
 hl.animation({ leaf = "windowsMove", enabled = true, speed = 5,    bezier = "wind",     style = "slide" })
 hl.animation({ leaf = "border",      enabled = true, speed = 10,   bezier = "linear" })
-hl.animation({ leaf = "borderangle", enabled = true, speed = 100,  bezier = "linear",   style = "loop" }) -- rainbow borders (was 1800; Lua caps speed at 100)
+-- Looping border angles force continuous redraws and starve Caelestia on three monitors.
+hl.animation({ leaf = "borderangle", enabled = false, speed = 100, bezier = "linear",  style = "once" }) -- rainbow borders (was 1800; Lua caps speed at 100)
 hl.animation({ leaf = "fade",        enabled = true, speed = 5,    bezier = "overshot" })
 hl.animation({ leaf = "workspaces",  enabled = true, speed = 5,    bezier = "wind" })
 hl.animation({ leaf = "windows",     enabled = true, speed = 5,    bezier = "bounce",   style = "popin" })

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Steam games, without per-game Launch Options:
+#  - gamemode: Steam starts each game under a "reaper SteamLaunch AppId=..." process; register that
+#    pid with gamemoded, which ends gamemode by itself once the reaper exits (a game that also has
+#    gamemoderun just adds a second client);
+#  - tag "games" on the game's windows (lua/windowrules.lua: immediate = tearing, no blur): native
+#    games have their own class, not steam_app_*, so the class rules miss them.
+# Started once from lua/autostart.lua.
+set -uo pipefail
+. "${0%/*}/single-instance.sh"
+
+POLL=5 # seconds between scans for new games and windows
+REQUEST_TIMEOUT=5
+
+descendants() { # descendants PID: PID and all its children, one per line
+    local c
+    echo "$1"
+    for c in $(pgrep -P "$1"); do descendants "$c"; done
+}
+
+tag_windows() { # tag_windows PID...: tag untagged windows owned by these pids
+    local pids addr
+    pids=$(printf '%s\n' "$@" | jq -R 'tonumber' | jq -s -c .)
+    hyprctl clients -j | jq -r --argjson p "$pids" \
+        '.[] | select((.pid as $x | $p | index($x)) and (.tags | map(select(startswith("games"))) | length == 0)) | .address' |
+        while read -r addr; do
+            hyprctl dispatch "hl.dsp.window.tag({ tag = \"+games\", window = \"address:$addr\" })" >/dev/null
+        done
+}
+
+declare -A registered=()
+while :; do
+    for pid in "${!registered[@]}"; do
+        kill -0 "$pid" 2>/dev/null || unset "registered[$pid]"
+    done
+    reapers=$(pgrep -f 'reaper SteamLaunch AppId=')
+    for pid in $reapers; do
+        [[ -v registered[$pid] ]] && continue
+        if timeout "$REQUEST_TIMEOUT" gamemoded -r"$pid" >/dev/null 2>&1; then
+            registered[$pid]=1
+        fi
+    done
+    if [[ -n $reapers ]]; then
+        # shellcheck disable=SC2046 # one pid per word
+        tag_windows $(for pid in $reapers; do descendants "$pid"; done)
+    fi
+    sleep "$POLL"
+done

@@ -5,3 +5,4 @@ hypr/scripts/dots-tui-ubuntu-2404
 *.bak
 *.tmp
 __pycache__/
+/sleep-watch.log

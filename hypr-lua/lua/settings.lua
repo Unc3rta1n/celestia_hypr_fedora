@@ -11,7 +11,6 @@ hl.config({
         default_split_ratio   = 1.0,
         split_bias            = 0,
         precise_mouse_move    = false,
-        special_scale_factor  = 0.8,
     },
     master = {
         new_status                    = "slave",

@@ -82,16 +82,15 @@ bind(M("ALT + code:32"), function()                                             
         util.notify("Normal Blur")
     end
 end, "toggle blur")
-bind(M("SHIFT + code:41"), shell("gameMode toggle"), "toggle game mode")            -- G
 bind(M("code:55"), exec(S .. "/clipboard.sh"), "clipboard manager (bottom, image previews)") -- V (was Super+Alt+V)
 bind(M("CTRL + code:45"), launcher_with(">scheme "), "colour scheme (caelestia; recolours ghostty too)") -- K
 section("Capture")
 -- caelestia area picker: per-monitor capture (slurp/grim -g broke across the rotated monitor), click snaps to a window
 bind("ALT + SHIFT + code:39", global("screenshotFreezeClip"), "screenshot area (frozen) -> clipboard (click notification to edit)")              -- S, was hyprshot
-bind(M("SHIFT + code:39"), global("screenshotClip"), "screenshot area -> clipboard (click notification to edit)")          -- S, was ScreenShot.sh --swappy
+bind(M("SHIFT + code:39"), global("screenshotFreezeClip"), "screenshot area (frozen) -> clipboard (click notification to edit)")          -- S, was ScreenShot.sh --swappy
 section("Windows")
-bind(M("SHIFT + code:33"), hl.dsp.window.fullscreen({ mode = "fullscreen" }), "fullscreen")      -- F
-bind(M("CTRL + code:33"), hl.dsp.window.fullscreen({ mode = "maximized" }), "maximize window")   -- F
+bind(M("SHIFT + code:41"), hl.dsp.window.fullscreen({ mode = "fullscreen" }), "fullscreen")      -- F (KoolDots had code:33 = P)
+bind(M("CTRL + code:41"), hl.dsp.window.fullscreen({ mode = "maximized" }), "maximize window")   -- F
 bind(M("ALT + SPACE"), function()                                                   -- was Float-all-Windows.sh
     local ws = hl.get_active_workspace()
     if not ws then return end
@@ -203,7 +202,7 @@ for _, d in ipairs({ "left", "right", "up", "down" }) do
 end
 
 -- Groups
-bind(M("code:41"), hl.dsp.group.toggle(), "toggle group")                           -- G
+bind(M("code:41"), hl.dsp.group.toggle(), "toggle group")                           -- F
 bind(M("CTRL + Tab"), hl.dsp.group.next(), "change active in group")
 bind(M("CTRL + code:46"), hl.dsp.window.move({ into_group = "right" }), "Move Right into group") -- L
 bind(M("CTRL + code:43"), hl.dsp.window.move({ out_of_group = true }), "Move active out of group") -- H

@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Reboot into Windows once, without catching the GRUB menu (it often lands on a monitor that is
+# still asleep on the 3-monitor setup). grub2-reboot sets the entry for the next boot only
+# (GRUB_DEFAULT=saved), the boot after that is Fedora again.
+# The entry is looked up by name on every run: os-prober names it after the NVMe device
+# ("Windows Boot Manager (on /dev/nvme1n1p1)"), and nvme0/nvme1 can swap between boots.
+# grub.cfg is root-only, so lookup + grub2-reboot run under pkexec (hyprpolkitagent dialog).
+set -uo pipefail
+
+GRUB_CFG=/boot/grub2/grub.cfg
+
+# shellcheck disable=SC2016  # $1 and $entry are expanded by the root shell, not here
+pkexec /bin/sh -c '
+    entry=$(awk -F"'\''" "/^menuentry .*Windows/{print \$2; exit}" "$1") || exit 1
+    [ -n "$entry" ] || { echo "no Windows entry in $1" >&2; exit 2; }
+    grub2-reboot "$entry" && echo "next boot: $entry"
+' reboot-windows "$GRUB_CFG" || {
+    notify-send -u critical "Reboot to Windows" "grub2-reboot failed, staying in Fedora"
+    exit 1
+}
+
+systemctl reboot

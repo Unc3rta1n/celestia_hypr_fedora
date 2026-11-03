@@ -88,7 +88,7 @@
       ]
     },
     "idle": {
-      "lockBeforeSleep": true,
+      "lockBeforeSleep": false,
       "inhibitWhenAudio": true,
       "inhibitWhenCharging": false,
       "timeouts": [

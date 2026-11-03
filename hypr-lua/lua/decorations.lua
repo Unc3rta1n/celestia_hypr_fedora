@@ -37,7 +37,7 @@ hl.config({
         blur = {
             enabled           = true,
             size              = 3,
-            passes            = 2,
+            passes            = 1, -- Leave GPU headroom for Caelestia across three monitors.
             new_optimizations = true,
             xray              = false,
             ignore_opacity    = false,

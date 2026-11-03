@@ -37,6 +37,9 @@ hl.on("hyprland.start", function()
     -- KDE Connect tray icon only while a phone is connected
     hl.exec_cmd(v.scriptsDir .. "/kdeconnect-watch")
 
+    -- Steam games: gamemode + "games" tag (tearing) without per-game Launch Options
+    hl.exec_cmd(v.scriptsDir .. "/steam-game-watch")
+
     -- Clipboard history (caelestia clipboard reads cliphist)
     hl.exec_cmd("wl-paste --type text --watch cliphist store")
     hl.exec_cmd("wl-paste --type image --watch cliphist store")

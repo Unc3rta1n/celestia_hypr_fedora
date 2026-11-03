@@ -31,6 +31,7 @@ alias cheat='f() { curl -s "cht.sh/$1"; }; f'
 alias jc='journalctl -xeu'
 alias sc='systemctl'
 alias scu='systemctl --user'
+alias winboot='~/.config/hypr/scripts/reboot-windows'   # reboot into Windows once (asks password)
 command -v lazygit >/dev/null && alias lg='lazygit'
 
 # ghostty's TERM is unknown on most remote hosts (backspace/colours break over ssh)

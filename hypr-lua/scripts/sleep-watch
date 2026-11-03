@@ -6,15 +6,21 @@
 # and nothing reacted. With no NVIDIA output during sleep there is nothing to flip on resume.
 # Telegram (Qt) keeps a buffer of the wrong orientation after its rotated monitor comes back;
 # pulling it through the Super+` scratchpad and back makes Hyprland resend size and transform.
+# Locks the screen itself, after the outputs are off (caelestia lockBeforeSleep is false in shell.json):
+# both reacting to the same PrepareForSleep, caelestia built its lock surfaces while HDMI vanished under
+# them and hung for good; after resume Hyprland showed the red "lockscreen crashed" screen.
 # Started once from lua/autostart.lua (inherits HYPRLAND_INSTANCE_SIGNATURE).
 set -uo pipefail
 
-log=/tmp/sleep-watch.log
+log="$HOME/convert_hypr_caelestia/sleep-watch.log"
+exec 2>>"$log" || exit 1
+OUTPUT_SETTLE_SECONDS=0.3
+LOCK_SETTLE_SECONDS=0.5
 inhibitor=
 disabled=0
 off_outputs=()
 
-log() { echo "$(date +%T.%3N) $*" >>"$log"; }
+log() { echo "$(date '+%Y-%m-%dT%H:%M:%S.%3N%:z') $*" >>"$log"; }
 
 hc() { # hyprctl with a timeout: a hung Hyprland must not hang this script too
     local rc
@@ -49,6 +55,18 @@ before_sleep() {
         hc eval "hl.monitor({ output = \"$out\", disabled = true })" && { disabled=1; off_outputs+=("$out"); }
     done
     log "before_sleep: done disabled=$disabled"
+    lock_screen
+}
+
+lock_screen() {
+    local rc
+    # let Hyprland drop the disabled outputs before caelestia creates a lock surface per screen
+    ((disabled)) && sleep "$OUTPUT_SETTLE_SECONDS"
+    timeout 3 qs -c caelestia ipc call lock lock >/dev/null
+    rc=$?
+    log "lock_screen: rc=$rc"
+    # the lock surfaces need their first frame before the system sleeps (InhibitDelayMaxSec is 5 s)
+    sleep "$LOCK_SETTLE_SECONDS"
 }
 
 nudge_telegram() { # re-pull Telegram if it sits on a monitor that was disabled during sleep
@@ -84,6 +102,8 @@ after_resume() {
     log "after_resume: done"
 }
 
+. "${0%/*}/single-instance.sh"
+log "started: pid=$$ instance=${HYPRLAND_INSTANCE_SIGNATURE:-unset}"
 hold_sleep
 while read -r line; do
     case $line in

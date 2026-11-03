@@ -43,6 +43,7 @@ apply() {
     hyprctl reload >/dev/null
 }
 
+. "${0%/*}/single-instance.sh"
 last=$(on_ac && echo ac || echo bat)
 # booted on battery: lua/power.lua already trimmed effects, only the profile is left
 [[ $last == bat ]] && to_saver

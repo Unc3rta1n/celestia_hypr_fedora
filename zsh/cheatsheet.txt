@@ -26,6 +26,7 @@ DNF	dni dnu dns dnr	install, upgrade --refresh, search, remove
 СИСТЕМА	cheat cmd	cht.sh по команде
 СИСТЕМА	jc sc scu	journalctl -xeu, systemctl, systemctl --user
 СИСТЕМА	reload	перезапуск zsh
+СИСТЕМА	winboot	перезагрузка в Windows (один раз, спросит пароль)
 ПРОМПТ	(авто)	после 30 с в другом окне команда присылает уведомление
 DOCKER	d dps dpa	docker, запущенные, все контейнеры
 DOCKER	dlogs имя	docker logs -f --tail 100

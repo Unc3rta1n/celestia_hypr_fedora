@@ -1,0 +1,14 @@
+# CPU package power limits: PL1 (sustained) 45 W, PL2 (bursts) 65 W instead of the firmware's 65/115 W.
+# CPU and GPU share one cooler: at 65 W + ~90 W GPU the CPU sat at 97-100 °C and throttled in games.
+# Written to both RAPL interfaces (MSR and MMIO; the lower one wins), at boot and again after resume,
+# since firmware may restore its own limits on wake. Installed by setup-desktop.sh.
+[Unit]
+Description=CPU power limits (PL1 45 W, PL2 65 W)
+After=suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for d in /sys/class/powercap/intel-rapl:0 /sys/class/powercap/intel-rapl-mmio:0; do [ -d "$$d" ] || continue; echo 45000000 >"$$d/constraint_0_power_limit_uw"; echo 65000000 >"$$d/constraint_1_power_limit_uw"; done'
+
+[Install]
+WantedBy=multi-user.target suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target

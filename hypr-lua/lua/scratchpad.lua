@@ -8,10 +8,12 @@
 -- elsewhere. On pull we remember the neighbour it was split from and on which side; on return
 -- we focus that neighbour and preselect the side, which rebuilds the same split.
 local M = {}
+local util = require("lua.util")
 
 local CLASS   = "org.telegram.desktop"
 local SPECIAL = "telegram"
 local GAP     = 40 -- px tolerance between touching tiles (gaps + borders)
+local SCALE   = 0.8
 
 -- survives `hyprctl reload` if the Lua state does; otherwise hiding just leaves it in special
 _G.scratchpad_origin = _G.scratchpad_origin or {}
@@ -59,7 +61,24 @@ local function put_back(addr, origin)
         hl.dispatch(hl.dsp.layout("preselect " .. origin.dir))
     end
     hl.dispatch(hl.dsp.window.move({ window = addr, workspace = origin.ws, follow = false }))
+    hl.dispatch(hl.dsp.window.float({ window = addr, action = origin.floating and "set" or "unset" }))
+    if origin.floating and origin.at and origin.size then
+        hl.dispatch(hl.dsp.window.resize({ window = addr, x = origin.size.x, y = origin.size.y, relative = false }))
+        hl.dispatch(hl.dsp.window.move({ window = addr, x = origin.at.x, y = origin.at.y, relative = false }))
+    end
     if here then hl.dispatch(hl.dsp.focus({ window = addr })) end
+end
+
+local function show(addr)
+    hl.dispatch(hl.dsp.focus({ window = addr }))
+    hl.dispatch(hl.dsp.window.float({ window = addr, action = "set" }))
+    local monitor = hl.get_active_monitor()
+    if not monitor then return end
+    local width, height = util.work_area(monitor)
+    hl.dispatch(hl.dsp.window.resize({
+        window = addr, x = math.floor(width * SCALE), y = math.floor(height * SCALE), relative = false,
+    }))
+    hl.dispatch(hl.dsp.window.center({ window = addr }))
 end
 
 function M.toggle()
@@ -76,10 +95,13 @@ function M.toggle()
     if not w.workspace.special then
         local neighbour, dir = nil, nil
         if not w.floating then neighbour, dir = find_neighbour(w) end
-        _G.scratchpad_origin[CLASS] = { ws = w.workspace.id, neighbour = neighbour, dir = dir, floating = w.floating }
+        _G.scratchpad_origin[CLASS] = {
+            ws = w.workspace.id, neighbour = neighbour, dir = dir, floating = w.floating,
+            at = { x = w.at.x, y = w.at.y }, size = { x = w.size.x, y = w.size.y },
+        }
         hl.dispatch(hl.dsp.window.move({ window = addr, workspace = "special:" .. SPECIAL, follow = false }))
         if not shown then hl.dispatch(hl.dsp.workspace.toggle_special(SPECIAL)) end
-        hl.dispatch(hl.dsp.focus({ window = addr }))
+        show(addr)
     elseif shown then
         local origin = _G.scratchpad_origin[CLASS]
         hl.dispatch(hl.dsp.workspace.toggle_special(SPECIAL))
@@ -89,7 +111,7 @@ function M.toggle()
         end
     else
         hl.dispatch(hl.dsp.workspace.toggle_special(SPECIAL))
-        hl.dispatch(hl.dsp.focus({ window = addr }))
+        show(addr)
     end
 end
 

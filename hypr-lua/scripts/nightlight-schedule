@@ -9,6 +9,7 @@ usage: nightlight-schedule [LAT LON]      (started from lua/autostart.lua)
 """
 import math
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -56,6 +57,16 @@ def apply(night: bool) -> None:
         subprocess.run([SCRIPT, "toggle"], check=False)
 
 
+def kill_old_copies() -> None:
+    """One copy only: a Hyprland crash + restart runs autostart again while the old copy keeps
+    running, and two copies would toggle the night light twice (on, then straight back off)."""
+    found = subprocess.run(["pgrep", "-f", "scripts/nightlight-schedule"],
+                           capture_output=True, text=True, check=False).stdout.split()
+    for pid in map(int, found):
+        if pid != os.getpid():
+            os.kill(pid, signal.SIGTERM)
+
+
 def main() -> int:
     args = sys.argv[1:]
     if args and args[0] == "--times":
@@ -63,6 +74,7 @@ def main() -> int:
         print(f"sunrise {rise.astimezone():%H:%M}  sunset {set_.astimezone():%H:%M}")
         return 0
     lat, lon = (float(args[0]), float(args[1])) if len(args) >= 2 else (LAT, LON)
+    kill_old_copies()
 
     night = is_night(datetime.now(timezone.utc), lat, lon)
     apply(night)

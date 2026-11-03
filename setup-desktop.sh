@@ -2,7 +2,7 @@
 # Desktop tweaks made by hand outside ~/.config/hypr during the migration. Idempotent: rerun safely.
 #   ghostty / zsh colours from caelestia, Qt + KDE fonts, cursor (XCursor fallback), Dolphin defaults,
 #   menus for "Open with", swaync out of the way, lid suspend when docked, workspace overview,
-#   VS Code Ctrl+Shift+V paste (for clipboard.sh).
+#   VS Code Ctrl+Shift+V paste (for clipboard.sh), MangoHud for Steam games.
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 
@@ -20,6 +20,12 @@ sed -i -E 's/^(theme *=)/# \1/' "$g" 2>/dev/null || true
 set_line "$g" '^window-inherit-working-directory' 'window-inherit-working-directory = false'
 mkdir -p "$HOME/.local/share/applications"
 cp "$HERE"/com.mitchellh.ghostty.desktop "$HOME/.local/share/applications/"
+
+step "steam: games inherit MANGOHUD=1 (overlay in every game, Shift+F12 hides it)"
+s=/usr/share/applications/steam.desktop
+if [[ -r $s ]]; then
+    sed 's|^Exec=/usr/bin/steam|Exec=env MANGOHUD=1 /usr/bin/steam|' "$s" >"$HOME/.local/share/applications/steam.desktop"
+fi
 
 step "zsh: new terminals get the current caelestia scheme"
 z=$HOME/.zshrc
@@ -75,6 +81,14 @@ lid=/etc/systemd/logind.conf.d/10-lid-suspend.conf
 if ! cmp -s "$HERE"/systemd/10-lid-suspend.conf "$lid"; then
     sudo install -Dm644 "$HERE"/systemd/10-lid-suspend.conf "$lid"
     sudo systemctl kill -s HUP systemd-logind  # reload config without ending the session
+fi
+
+step "CPU power limits PL1 45 W / PL2 65 W, at boot and after resume (sudo)"
+pl=/etc/systemd/system/cpu-power-limit.service
+if ! cmp -s "$HERE"/systemd/cpu-power-limit.service "$pl"; then
+    sudo install -Dm644 "$HERE"/systemd/cpu-power-limit.service "$pl"
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now cpu-power-limit.service
 fi
 
 step "dnf5: snapper pre/post snapshots around transactions (sudo)"

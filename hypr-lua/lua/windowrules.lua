@@ -244,6 +244,14 @@ hl.window_rule({
     tag = "+games",
 })
 
+-- games that announce themselves via content-type; Steam games are also tagged by scripts/steam-game-watch
+hl.window_rule({
+    match = {
+        content = "game",
+    },
+    tag = "+games",
+})
+
 -- gamestore tags
 hl.window_rule({
     match = {

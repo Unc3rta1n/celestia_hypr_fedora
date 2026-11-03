@@ -18,6 +18,7 @@ require("lua.screenshare_dnd") -- do not disturb while the screen is shared
 require("monitors")
 require("lua.workspace_home") -- before workspaces: reads its rules, moves workspaces back on replug
 require("workspaces")
+require("lua.tv_display") -- TV only at home; restore the laptop panel on unplug
 
 -- Local overrides that should survive updates
 pcall(require, "lua.user")

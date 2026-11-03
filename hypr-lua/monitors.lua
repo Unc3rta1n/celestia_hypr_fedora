@@ -13,9 +13,19 @@ hl.monitor({
     scale = 1
 })
 hl.monitor({
-    output = "HDMI-A-1",
+    output = "desc:Samsung Electric Company S24C450 HLND300483",
     mode = "1920x1200@59.95",
     position = "3840x402",
     scale = 1,
     transform = 1
+})
+
+-- Match the TV by description so it never inherits the office monitor's rotation.
+hl.monitor({
+    output = "desc:Samsung Electric Company SAMSUNG 0x01000E00",
+    mode = "2560x1440@59.95",
+    position = "0x-1440",
+    scale = 1,
+    transform = 0,
+    mirror = ""
 })

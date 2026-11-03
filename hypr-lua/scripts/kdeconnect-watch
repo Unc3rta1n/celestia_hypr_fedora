@@ -8,6 +8,8 @@ POLL_SECONDS=10
 reachable() { [[ -n $(kdeconnect-cli --list-available --id-only 2>/dev/null) ]]; }
 running() { pgrep -f '^kdeconnect-indicator' >/dev/null; }
 
+. "${0%/*}/single-instance.sh"
+
 while true; do
     if reachable; then
         running || kdeconnect-indicator >/dev/null 2>&1 &
