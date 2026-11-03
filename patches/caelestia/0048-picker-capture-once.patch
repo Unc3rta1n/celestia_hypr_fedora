@@ -1,0 +1,94 @@
+diff --git a/modules/areapicker/Picker.qml b/modules/areapicker/Picker.qml
+--- a/modules/areapicker/Picker.qml
++++ b/modules/areapicker/Picker.qml
+@@ -18,6 +18,9 @@
+ 
+     property bool onClient
+     property bool instant
++    property bool capturePending
++    property bool savePending
++    property rect captureRect
+ 
+     property real realBorderWidth: onClient ? (Hypr.options["general:border_size"] ?? 1) : 2
+     property real realRounding: onClient ? (Hypr.options["decoration:rounding"] ?? 0) : 0
+@@ -56,6 +59,9 @@
+     }
+ 
+     function checkClientRects(x: real, y: real): void {
++        if (capturePending || loader.closing)
++            return;
++
+         for (const client of clients) {
+             if (!client)
+                 continue;
+@@ -82,8 +88,12 @@
+     }
+ 
+     function save(): void {
++        if (savePending || loader.closing)
++            return;
++        savePending = true;
++
+         const tmpfile = Qt.resolvedUrl(`/tmp/caelestia-picker-${Quickshell.processId}-${Date.now()}.png`);
+-        CUtils.saveItem(screencopy, tmpfile, Qt.rect(Math.ceil(rsx), Math.ceil(rsy), Math.floor(sw), Math.floor(sh)), path => {
++        CUtils.saveItem(screencopy, tmpfile, captureRect, path => {
+             if (root.loader.qr) {
+                 // zbar -> clipboard; a link opens when the notification is clicked (default action)
+                 const script = 't=$(zbarimg -q --raw "$1" 2>/dev/null); rm -f "$1"; '
+@@ -118,6 +128,12 @@
+                 Quickshell.execDetached(["swappy", "-f", path]);
+             }
+             closeAnim.start();
++        }, () => {
++            console.warn("Area picker: failed to save screenshot");
++            savePending = capturePending = false;
++            if (!loader.freeze)
++                screencopy.active = false;
++            overlay.visible = border.visible = true;
+         });
+     }
+ 
+@@ -167,9 +183,12 @@
+     }
+ 
+     onReleased: {
+-        if (closeAnim.running || sw < 1 || sh < 1)
+-            return;
+-
++        if (capturePending || loader.closing || closeAnim.running || sw < 1 || sh < 1)
++            return;
++
++        // Claim this selection before the asynchronous capture can deliver a frame.
++        capturePending = true;
++        captureRect = Qt.rect(Math.ceil(rsx), Math.ceil(rsy), Math.floor(sw), Math.floor(sh));
+         if (root.loader.freeze) {
+             save();
+         } else {
+@@ -181,7 +200,7 @@
+ 
+     // Cursor moved to another monitor: drop the selection here so only one monitor shows one
+     onExited: {
+-        if (pressed || closeAnim.running)
++        if (capturePending || pressed || closeAnim.running)
+             return;
+         onClient = false;
+         instant = true;
+@@ -191,6 +210,9 @@
+     }
+ 
+     onPositionChanged: event => {
++        if (capturePending || loader.closing)
++            return;
++
+         const x = event.x;
+         const y = event.y;
+ 
+@@ -279,7 +301,7 @@
+             captureSource: root.screen
+ 
+             onHasContentChanged: {
+-                if (hasContent && !root.loader.freeze) {
++                if (hasContent && root.capturePending && !root.loader.freeze && !root.loader.closing) {
+                     overlay.visible = border.visible = true;
+                     root.save();
+                 }

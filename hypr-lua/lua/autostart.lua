@@ -12,10 +12,13 @@ hl.on("hyprland.start", function()
 
     hl.exec_cmd(v.scriptsDir .. "/Polkit.sh")
 
+    -- Finish the PAM-started keyring before the lockscreen tries to unlock it.
+    -- Keep the shell available even if keyring initialization fails; report the failure.
+    local keyring = "gnome-keyring-daemon --start --components=secrets"
+        .. " || logger -t hyprland 'GNOME Keyring initialization failed'; "
     -- Shell: bar, notifications, launcher, OSD, session menu, wallpaper
-    hl.exec_cmd(v.caelestia)
     -- lock on login like KoolDots did with `exec-once = hyprlock`, now with the caelestia lockscreen
-    hl.exec_cmd("sleep 3 && qs -c caelestia ipc call lock lock")
+    hl.exec_cmd(keyring .. v.caelestia .. " && sleep 3 && qs -c caelestia ipc call lock lock")
     -- Workspace overview (~/.config/quickshell/overview, Shanu-Kumawat/quickshell-overview)
     hl.exec_cmd("qs -c overview")
 

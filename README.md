@@ -116,6 +116,9 @@ Super+Ctrl+Shift+R pause.
 45. right sidebar opens on hover over the whole right border (10px), not only its last 2px, so the cursor no longer has to slip onto the next monitor first; leaving the screen closes it even when it was opened from the outer border strip
 46. quick toggles: `nightLight` (runs `Hyprsunset.sh toggle`, lit from `~/.cache/.hyprsunset_state`, so it follows Super+N and `nightlight-schedule`), replaces `wallpaperPlaying` in `shell.json`
 47. bar workspaces: an occupied, unfocused workspace drops its indicator shape (window icons already mark it) and keeps only a small gap, so 8 workspaces with icons fit a 1080px vertical bar; the focused one keeps its shape
+48. area picker: latch the selected crop before asynchronous capture, ignore duplicate saves, and allow retry after save failure
+49. area picker: use the system drag threshold so small pointer movement during a window click does not turn it into a tiny crop or leave the selector open
+50. lockscreen: unlock the GNOME login keyring with the verified password; Hyprland finishes keyring initialization before starting the shell and login lockscreen
 
 ## zsh
 
