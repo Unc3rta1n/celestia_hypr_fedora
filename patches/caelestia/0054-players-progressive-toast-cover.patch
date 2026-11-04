@@ -1,0 +1,113 @@
+diff --git a/modules/utilities/toasts/ToastItem.qml b/modules/utilities/toasts/ToastItem.qml
+index a662424d..ed771a7d 100644
+--- a/modules/utilities/toasts/ToastItem.qml
++++ b/modules/utilities/toasts/ToastItem.qml
+@@ -12,10 +12,11 @@ StyledRect {
+     id: root
+ 
+     required property Toast modelData
+-    // the icon field carries a cover url for the now-playing toast
+-    readonly property bool hasCover: /^(file|https?):\/\//.test(modelData.icon)
++    // The now-playing icon carries its track and fallback; resolve the latest cover reactively.
++    readonly property string icon: Players.getToastIcon(modelData.icon)
++    readonly property bool hasCover: /^(file|https?):\/\//.test(root.icon)
+     // keyboard layout and now-playing toasts: one line without the title, sized to its text
+-    readonly property bool compact: modelData.icon === "keyboard" || modelData.icon === "music_note" || hasCover
++    readonly property bool compact: root.icon === "keyboard" || root.icon === "music_note" || hasCover
+ 
+     anchors.left: compact ? undefined : parent.left
+     anchors.right: parent.right
+@@ -87,9 +88,10 @@ StyledRect {
+ 
+                 Image {
+                     anchors.fill: parent
+-                    source: root.hasCover ? root.modelData.icon : ""
++                    source: root.hasCover ? root.icon : ""
+                     fillMode: Image.PreserveAspectCrop
+                     asynchronous: true
++                    retainWhileLoading: true
+                 }
+             }
+ 
+@@ -99,7 +101,7 @@ StyledRect {
+                 visible: !root.hasCover
+ 
+                 anchors.centerIn: parent
+-                text: root.modelData.icon
++                text: root.icon
+                 color: {
+                     if (root.modelData.type === Toast.Success)
+                         return Colours.palette.m3onSuccess;
+@@ -142,7 +144,7 @@ StyledRect {
+                 text: {
+                     const msg = Tr.trMarked(root.modelData.message);
+                     // "Layout changed to: Russian" -> "Russian"
+-                    return root.modelData.icon === "keyboard" ? msg.slice(msg.lastIndexOf(":") + 1).trim() : msg;
++                    return root.icon === "keyboard" ? msg.slice(msg.lastIndexOf(":") + 1).trim() : msg;
+                 }
+                 color: {
+                     if (root.modelData.type === Toast.Success)
+diff --git a/services/Players.qml b/services/Players.qml
+index db1981c6..2b68cb7b 100644
+--- a/services/Players.qml
++++ b/services/Players.qml
+@@ -169,6 +169,16 @@ Singleton {
+         return "";
+     }
+ 
++    // A toast keeps its own track key and fallback, even after the active track changes.
++    // artRevision makes visible toast bindings refresh when a catalogue lookup completes.
++    function getToastIcon(icon: string): string {
++        artRevision;
++        if (!icon.startsWith("now-playing:"))
++            return icon;
++        const art = JSON.parse(icon.slice("now-playing:".length));
++        return hiResArt[art.key] || art.url || "music_note";
++    }
++
+     // Quickshell only emits postTrackChanged when trackid/url/title change, so late
+     // artist updates (common with mpv-mpris + yt-dlp player) never retrigger it. Watch
+     // title/artist too and toast once both are usable.
+@@ -200,39 +210,23 @@ Singleton {
+         if (key === lastNowPlayingKey && now - lastNowPlayingAt < repeatAfter)
+             return;
+ 
+-        // the hi-res cover lookup is a network request; give it a moment so the toast doesn't show the 40x40 one
++        // Start the hi-res lookup without delaying the toast; its image updates in place.
+         const art = getArtUrl(player);
+-        if (art.includes("/firefox-mpris/") && hiResArt[`${artist}|${title}`] === null && nowPlayingArtTries < nowPlayingArtMaxTries) {
+-            nowPlayingArtTries++;
+-            nowPlayingArtWait.restart();
+-            return;
+-        }
+-
+-        nowPlayingArtTries = 0;
++        const icon = `now-playing:${JSON.stringify({ key: `${artist}|${title}`, url: art })}`;
+         lastNowPlayingKey = key;
+         lastNowPlayingAt = now;
+-        Toaster.toast(Tr.tr("Now playing"), Tr.trCtx("%1 - %2", "track artist and title").arg(artist).arg(title), art || "music_note", Toast.Info, nowPlayingToastTimeout);
++        Toaster.toast(Tr.tr("Now playing"), Tr.trCtx("%1 - %2", "track artist and title").arg(artist).arg(title), icon, Toast.Info, nowPlayingToastTimeout);
+     }
+ 
+     onActiveChanged: lastNowPlayingKey = ""
+ 
+-    property int nowPlayingArtTries: 0
+-    readonly property int nowPlayingArtMaxTries: 8
+     readonly property int nowPlayingToastTimeout: 1750 // ms
+ 
+-    Timer {
+-        id: nowPlayingArtWait
+-
+-        interval: 100
+-        onTriggered: root.maybeToastNowPlaying()
+-    }
+-
+     Timer {
+         id: nowPlayingSettle
+ 
+         interval: 800
+         onTriggered: {
+-            root.nowPlayingArtTries = 0;
+             root.maybeToastNowPlaying();
+         }
+     }

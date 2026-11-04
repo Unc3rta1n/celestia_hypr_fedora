@@ -120,6 +120,10 @@ Super+Ctrl+Shift+R pause.
 49. area picker: use the system drag threshold so small pointer movement during a window click does not turn it into a tiny crop or leave the selector open
 50. lockscreen: unlock the GNOME login keyring with the verified password; Hyprland finishes keyring initialization before starting the shell and login lockscreen
 51. network popout: open the built-in network settings beside the wireless rescan button, matching the Bluetooth popout
+52. "Now playing": skip YouTube Shorts identified by the MPRIS `xesam:url` (`youtube.com/shorts/`, including `www` and `m`); music and ordinary videos keep their toasts. Missing or rewritten URLs cannot identify Shorts.
+53. "Now playing": check the high-resolution cover every 100 ms (8 retries, up to 800 ms instead of 3.2 s); retain the 800 ms metadata settle delay and existing duplicate suppression.
+54. "Now playing": supersede the cover wait with immediate display after metadata settles; upgrade the same toast to the catalogue cover when available, keeping its original track identity and fallback. The media popout already updates its cover through `Players.getArtUrl`.
+55. "Now playing": reduce metadata debounce from 800 to 200 ms; replay of eight recorded Firefox/Yandex Music transitions produced one correct toast per track, approximately 422–493 ms after a skip. Keep duplicate suppression and progressive artwork updates.
 
 ## zsh
 
