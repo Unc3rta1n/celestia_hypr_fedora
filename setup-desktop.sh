@@ -46,17 +46,21 @@ q=$HOME/.config/qt6ct/qt6ct.conf
 [[ -e $q ]] && set_line "$q" '^general=' 'general="Noto Sans,11,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,Regular"'
 [[ -e $q ]] && set_line "$q" '^icon_theme=' 'icon_theme=breeze-dark'
 
-step "cursor: gruvbox-light 28 everywhere (XCursor rebuilt from hyprcursor for XWayland/GTK/Electron)"
-for t in "$HOME"/.icons/gruvbox-light "$HOME"/.icons/gruvbox-dark; do
-    # 28 = XCURSOR_SIZE: without an exact size GTK/XWayland apps fall back to the 24px cursor
-    [[ -d $t/hyprcursors ]] && python3 "$HERE"/hyprcursor2xcursor.py "$t" 28
-done
-mkdir -p "$HOME/.icons/default"
-printf '[Icon Theme]\nInherits=gruvbox-light\n' >"$HOME/.icons/default/index.theme"
-kwriteconfig6 --file kcminputrc --group Mouse --key cursorTheme gruvbox-light
-kwriteconfig6 --file kcminputrc --group Mouse --key cursorSize 28
-gsettings set org.gnome.desktop.interface cursor-theme gruvbox-light
-gsettings set org.gnome.desktop.interface cursor-size 28
+if [[ -f ${XDG_STATE_HOME:-$HOME/.local/state}/cursor-theme-manager/state.json ]]; then
+    step "cursor: preserve Cursor Theme Manager selection"
+else
+    step "cursor: gruvbox-light 28 everywhere (XCursor rebuilt from hyprcursor for XWayland/GTK/Electron)"
+    for t in "$HOME"/.icons/gruvbox-light "$HOME"/.icons/gruvbox-dark; do
+        # 28 = XCURSOR_SIZE: without an exact size GTK/XWayland apps fall back to the 24px cursor
+        [[ -d $t/hyprcursors ]] && python3 "$HERE"/hyprcursor2xcursor.py "$t" 28
+    done
+    mkdir -p "$HOME/.icons/default"
+    printf '[Icon Theme]\nInherits=gruvbox-light\n' >"$HOME/.icons/default/index.theme"
+    kwriteconfig6 --file kcminputrc --group Mouse --key cursorTheme gruvbox-light
+    kwriteconfig6 --file kcminputrc --group Mouse --key cursorSize 28
+    gsettings set org.gnome.desktop.interface cursor-theme gruvbox-light
+    gsettings set org.gnome.desktop.interface cursor-size 28
+fi
 
 step "Dolphin: default file manager, starts in \$HOME, ghostty as terminal"
 xdg-mime default org.kde.dolphin.desktop inode/directory

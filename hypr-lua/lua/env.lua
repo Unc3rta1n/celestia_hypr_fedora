@@ -29,12 +29,8 @@ hl.env("QT_QUICK_CONTROLS_STYLE", "org.hyprland.style")
 hl.env("GDK_SCALE", "1")
 hl.env("QT_SCALE_FACTOR", "1")
 
--- Cursor
-hl.env("HYPRCURSOR_THEME", "gruvbox-light")
-hl.env("HYPRCURSOR_SIZE", "28")
--- XCursor fallback (XWayland/Electron/GTK): same theme, rebuilt by hyprcursor2xcursor.py
-hl.env("XCURSOR_THEME", "gruvbox-light")
-hl.env("XCURSOR_SIZE", "28")
+-- Cursor Theme Manager restores the saved Hyprcursor/XCursor theme and size at login.
+-- Do not pin these environment values here: a config reload would override the user's selection.
 
 -- Apps
 hl.env("MOZ_ENABLE_WAYLAND", "1")

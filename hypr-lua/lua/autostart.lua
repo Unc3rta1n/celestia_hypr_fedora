@@ -12,6 +12,9 @@ hl.on("hyprland.start", function()
 
     hl.exec_cmd(v.scriptsDir .. "/Polkit.sh")
 
+    -- Restore the saved cursor without opening its window; keep one host for launcher IPC.
+    hl.exec_cmd('test ! -x "$HOME/cursor-theme-manager/cursor-theme-manager" || "$HOME/cursor-theme-manager/cursor-theme-manager" --daemon')
+
     -- Finish the PAM-started keyring before the lockscreen tries to unlock it.
     -- Keep the shell available even if keyring initialization fails; report the failure.
     local keyring = "gnome-keyring-daemon --start --components=secrets"

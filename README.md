@@ -125,6 +125,11 @@ Super+Ctrl+Shift+R pause.
 54. "Now playing": supersede the cover wait with immediate display after metadata settles; upgrade the same toast to the catalogue cover when available, keeping its original track identity and fallback. The media popout already updates its cover through `Players.getArtUrl`.
 55. "Now playing": reduce metadata debounce from 800 to 200 ms; replay of eight recorded Firefox/Yandex Music transitions produced one correct toast per track, approximately 422–493 ms after a skip. Keep duplicate suppression and progressive artwork updates.
 
+Cursor themes can be managed by the standalone [Cursor Theme Manager fork](https://github.com/Unc3rta1n/cursor-theme-manager)
+checked out at `~/cursor-theme-manager`. Hyprland starts its hidden host at login to
+restore the saved theme and size; open its registered application to change them.
+`setup-desktop.sh` preserves a manager selection when its state file exists.
+
 ## zsh
 
 oh-my-zsh with starship, atuin, fzf-tab, eza, bat and friends; `zh` (or F1) prints the cheatsheet of all binds and aliases.
