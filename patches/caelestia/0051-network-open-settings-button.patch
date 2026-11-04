@@ -1,0 +1,116 @@
+diff --git a/modules/bar/popouts/Network.qml b/modules/bar/popouts/Network.qml
+index e6fd5769..b95cab27 100644
+--- a/modules/bar/popouts/Network.qml
++++ b/modules/bar/popouts/Network.qml
+@@ -167,57 +167,76 @@ ColumnLayout {
+         }
+     }
+ 
+-    StyledRect {
++    RowLayout {
+         visible: root.view === "wireless"
+         Layout.preferredHeight: visible ? implicitHeight : 0
+         Layout.topMargin: visible ? Tokens.spacing.small : 0
+         Layout.fillWidth: true
+-        implicitHeight: rescanBtn.implicitHeight + Tokens.padding.small
++        spacing: Tokens.spacing.small
+ 
+-        radius: Tokens.rounding.full
+-        color: Colours.palette.m3primaryContainer
++        StyledRect {
++            Layout.fillWidth: true
++            implicitHeight: rescanBtn.implicitHeight + Tokens.padding.small
+ 
+-        StateLayer {
+-            color: Colours.palette.m3onPrimaryContainer
+-            disabled: Nmcli.scanning || !Nmcli.wifiEnabled
+-            onClicked: Nmcli.rescanWifi()
+-        }
++            radius: Tokens.rounding.full
++            color: Colours.palette.m3primaryContainer
+ 
+-        RowLayout {
+-            id: rescanBtn
++            StateLayer {
++                color: Colours.palette.m3onPrimaryContainer
++                disabled: Nmcli.scanning || !Nmcli.wifiEnabled
++                onClicked: Nmcli.rescanWifi()
++            }
+ 
+-            anchors.centerIn: parent
+-            spacing: Tokens.spacing.small
+-            opacity: Nmcli.scanning ? 0 : 1
++            RowLayout {
++                id: rescanBtn
+ 
+-            MaterialIcon {
+-                id: scanIcon
++                anchors.centerIn: parent
++                spacing: Tokens.spacing.small
++                opacity: Nmcli.scanning ? 0 : 1
+ 
+-                Layout.topMargin: Math.round(fontInfo.pointSize * 0.0575)
+-                animate: true
+-                text: "wifi_find"
+-                color: Colours.palette.m3onPrimaryContainer
+-            }
++                MaterialIcon {
++                    id: scanIcon
+ 
+-            StyledText {
+-                Layout.topMargin: -Math.round(scanIcon.fontInfo.pointSize * 0.0575)
+-                text: Tr.tr("Rescan networks")
+-                color: Colours.palette.m3onPrimaryContainer
+-            }
++                    Layout.topMargin: Math.round(fontInfo.pointSize * 0.0575)
++                    animate: true
++                    text: "wifi_find"
++                    color: Colours.palette.m3onPrimaryContainer
++                }
+ 
+-            Behavior on opacity {
+-                Anim {
+-                    type: Anim.DefaultEffects
++                StyledText {
++                    Layout.topMargin: -Math.round(scanIcon.fontInfo.pointSize * 0.0575)
++                    text: Tr.tr("Rescan")
++                    font: Tokens.font.body.small
++                    color: Colours.palette.m3onPrimaryContainer
+                 }
++
++                Behavior on opacity {
++                    Anim {
++                        type: Anim.DefaultEffects
++                    }
++                }
++            }
++
++            CircularIndicator {
++                anchors.centerIn: parent
++                strokeWidth: Tokens.padding.extraSmall / 2
++                bgColour: "transparent"
++                implicitSize: parent.implicitHeight - Tokens.padding.large
++                running: Nmcli.scanning
+             }
+         }
+ 
+-        CircularIndicator {
+-            anchors.centerIn: parent
+-            strokeWidth: Tokens.padding.extraSmall / 2
+-            bgColour: "transparent"
+-            implicitSize: parent.implicitHeight - Tokens.padding.large
+-            running: Nmcli.scanning
++        IconTextButton {
++            Layout.fillHeight: true
++            inactiveColour: Colours.palette.m3primaryContainer
++            inactiveOnColour: Colours.palette.m3onPrimaryContainer
++            horizontalPadding: Tokens.padding.small
++            verticalPadding: Tokens.padding.extraSmall
++            font: Tokens.font.body.small
++            text: Tr.tr("Open settings")
++            icon: "settings"
++
++            onClicked: root.popouts.detachRequested("network")
+         }
+     }
+ 

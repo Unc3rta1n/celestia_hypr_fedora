@@ -119,6 +119,7 @@ Super+Ctrl+Shift+R pause.
 48. area picker: latch the selected crop before asynchronous capture, ignore duplicate saves, and allow retry after save failure
 49. area picker: use the system drag threshold so small pointer movement during a window click does not turn it into a tiny crop or leave the selector open
 50. lockscreen: unlock the GNOME login keyring with the verified password; Hyprland finishes keyring initialization before starting the shell and login lockscreen
+51. network popout: open the built-in network settings beside the wireless rescan button, matching the Bluetooth popout
 
 ## zsh
 
