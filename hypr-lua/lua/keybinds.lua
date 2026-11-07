@@ -65,7 +65,7 @@ end, "app launcher (caelestia; fuzzel in fullscreen)")                    -- was
 bind(M("Return"), exec(v.term), "Open terminal")
 bind(M("code:26"), exec(v.files), "file manager")                                   -- E
 bind(M("SHIFT + code:26"), exec(v.tuiFiles), "file manager (yazi)")                 -- E
-bind(M("code:54"), exec(S .. "/menus.sh ssh"), "SSH session manager (ghostty)")         -- C
+bind(M("code:54"), exec("qs -c caelestia ipc call ssh open || " .. S .. "/menus.sh ssh"), "SSH session manager (caelestia)")         -- C
 
 ---------------------------------------------------------------- FEATURES / EXTRAS
 section("Tools")

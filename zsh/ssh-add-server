@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Add an SSH host and store its password in GNOME Keyring.
+set -euo pipefail
+umask 077
+
+command -v secret-tool >/dev/null || { echo 'Install secret-tool (libsecret).' >&2; exit 1; }
+gui=false
+if [[ ${1:-} == --gui && $# == 5 ]]; then
+    gui=true
+    name=$2 host=$3 user=$4 port=$5
+else
+[[ -t 0 ]] || { echo 'Run this command in a terminal.' >&2; exit 1; }
+read -r -p 'Menu name: ' name
+read -r -p 'Server address: ' host
+read -r -p 'User: ' user
+read -r -p 'Port [22]: ' port
+fi
+port=${port:-22}
+[[ $name =~ ^[a-zA-Z0-9_.+@-]+$ && $host =~ ^[a-zA-Z0-9_.:%-]+$ && $user =~ ^[a-zA-Z0-9_.-]+$ ]] || { echo 'Invalid name, address or user.' >&2; exit 1; }
+[[ $port =~ ^[0-9]{1,5}$ ]] && (( 10#$port >= 1 && 10#$port <= 65535 )) || { echo 'Port must be between 1 and 65535.' >&2; exit 1; }
+config=$HOME/.ssh/config
+if [[ -f $config ]] && awk -v name="$name" 'tolower($1) == "host" { for (i=2; i<=NF && $i !~ /^#/; i++) if (tolower($i) == tolower(name)) found=1 } END { exit !found }' "$config"; then
+    if ! $gui; then
+        read -r -p 'This host already exists. Replace its settings? [y/N] ' answer
+        [[ $answer == [yY] ]] || exit 0
+    fi
+fi
+if secret-tool lookup service ssh-moba host "$host" user "$user" >/dev/null; then
+    if ! $gui; then
+        read -r -p 'A password already exists for this address and user. Replace it? [y/N] ' answer
+        [[ $answer == [yY] ]] || exit 0
+    fi
+fi
+if $gui; then
+    IFS= read -r password || [[ -n $password ]]
+else
+    IFS= read -r -s -p 'Password: ' password
+    printf '\n'
+fi
+[[ -n $password ]] || { echo 'Password must not be empty.' >&2; exit 1; }
+mkdir -p "$HOME/.ssh"
+[[ ! -L $config ]] || { echo 'SSH config is a symbolic link; edit it manually.' >&2; exit 1; }
+tmp=$(mktemp "$HOME/.ssh/.config.XXXXXXXX")
+trap 'rm -f "$tmp"' EXIT
+printf 'Host %s\n    HostName %s\n    User %s\n    Port %s\n\n' "$name" "$host" "$user" "$port" > "$tmp"
+if [[ -f $config ]]; then
+    command cat "$config" >> "$tmp"
+    backup=$(mktemp "$HOME/.ssh/config.backup.XXXXXXXX")
+    command cp -p -- "$config" "$backup"
+fi
+ssh -G -F "$tmp" "$name" >/dev/null 2>&1 || { echo 'Could not validate SSH config.' >&2; exit 1; }
+printf '%s' "$password" | secret-tool store --label="SSH $user@$host" service ssh-moba host "$host" user "$user"
+unset password
+command mv -f -- "$tmp" "$config"
+printf 'Server %s added.\n' "$name"
+[[ -z ${backup:-} ]] || printf 'Backup: %s\n' "$backup"

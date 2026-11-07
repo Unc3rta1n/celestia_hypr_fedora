@@ -33,13 +33,16 @@ ssh_menu() {
     [[ -f $cfg ]] || { notify "SSH" "No $cfg"; exit 1; }
     sel=$(awk '
         { sub(/[ \t]*#.*/, "") }
-        $1 == "Host" { delete cur; for (i = 2; i <= NF; i++) if ($i !~ /[*?!]/) { cur[$i] = 1; if (!($i in seen)) { seen[$i] = 1; order[++n] = $i } } next }
-        $1 == "HostName" { for (h in cur) hn[h] = $2 }
-        $1 == "User"     { for (h in cur) us[h] = $2 }
+        tolower($1) == "host" { delete cur; for (i = 2; i <= NF; i++) if ($i !~ /[*?!]/) { cur[$i] = 1; if (!($i in seen)) { seen[$i] = 1; order[++n] = $i } } next }
+        tolower($1) == "hostname" { for (h in cur) if (!(h in hn)) hn[h] = $2 }
+        tolower($1) == "user"     { for (h in cur) if (!(h in us)) us[h] = $2 }
         END { for (i = 1; i <= n; i++) { h = order[i]; printf "%s  │  %s@%s\n", h, (h in us ? us[h] : ENVIRON["USER"]), (h in hn ? hn[h] : h) } }
     ' "$cfg" | menu "󰣀") || exit 0
     host=${sel%%  │*}
-    [[ -n $host ]] && exec "$TERMINAL" +new-window --title="SSH $host" -e ssh "$host"
+    [[ -n $host ]] || return
+    local -a wrapper=()
+    [[ -x /etc/xdg/quickshell/caelestia/assets/wrap_term_launch.sh ]] && wrapper=(/etc/xdg/quickshell/caelestia/assets/wrap_term_launch.sh)
+    exec "$TERMINAL" +new-window --title="SSH $host" -e "${wrapper[@]}" env SSH_ASKPASS="$HOME/.local/bin/ssh-askpass-keyring" SSH_ASKPASS_REQUIRE=force TERM=xterm-256color ssh "$host"
 }
 
 keys() {

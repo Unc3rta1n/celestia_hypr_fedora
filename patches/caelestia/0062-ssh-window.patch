@@ -1,0 +1,229 @@
+diff --git a/modules/ssh/SshWindow.qml b/modules/ssh/SshWindow.qml
+new file mode 100644
+index 00000000..ea3e419f
+--- /dev/null
++++ b/modules/ssh/SshWindow.qml
+@@ -0,0 +1,192 @@
++import QtQuick
++import QtQuick.Controls
++import QtQuick.Layouts
++import Quickshell
++import Quickshell.Io
++import Quickshell.Hyprland
++import Quickshell.Wayland
++import Caelestia.Config
++import qs.components
++import qs.components.controls
++import qs.components.containers
++import qs.services
++
++StyledWindow {
++    id: root
++    property bool editing: false
++    property bool confirmSave: false
++    property string error: ""
++    property var hosts: []
++    name: "ssh"
++    implicitWidth: 520
++    implicitHeight: 600
++    WlrLayershell.exclusionMode: ExclusionMode.Ignore
++    WlrLayershell.layer: WlrLayer.Overlay
++    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
++    visible: false
++    onVisibleChanged: {
++        if (!visible)
++            passwordField.text = "";
++    }
++    contentItem.Config.screen: screen?.name ?? ""
++    contentItem.Tokens.screen: screen?.name ?? ""
++
++    function open(): void {
++        if (visible) {
++            visible = false;
++            return;
++        }
++        screen = Quickshell.screens.find(s => Hypr.monitorFor(s) === Hypr.focusedMonitor) ?? Quickshell.screens[0];
++        editing = false;
++        confirmSave = false;
++        error = "";
++        searchField.text = "";
++        visible = true;
++        searchField.forceActiveFocus();
++        listProcess.running = true;
++    }
++    function connectHost(host: string): void {
++        Quickshell.execDetached(["ghostty", "+new-window", "--title=SSH " + host, "-e", Quickshell.shellDir + "/assets/wrap_term_launch.sh", "env", "SSH_ASKPASS=" + Quickshell.env("HOME") + "/.local/bin/ssh-askpass-keyring", "SSH_ASKPASS_REQUIRE=force", "TERM=xterm-256color", "ssh", host]);
++        visible = false;
++    }
++    function save(): void {
++        if (!nameField.text || !hostField.text || !userField.text || !passwordField.text) {
++            error = "Fill in all fields";
++            return;
++        }
++        confirmSave = true;
++    }
++    HyprlandFocusGrab {
++        active: root.visible
++        windows: [root]
++        onCleared: root.visible = false
++    }
++    Process {
++        id: listProcess
++        command: ["bash", "-c", "awk 'tolower($1)==\"host\" {for(i=2;i<=NF;i++) {if($i ~ /^#/) break; if($i !~ /[*?!]/ && !seen[$i]++) print $i}}' \"$HOME/.ssh/config\""]
++        stdout: StdioCollector {
++            onStreamFinished: root.hosts = text.trim() ? text.trim().split("\n") : []
++        }
++    }
++    Process {
++        id: saveProcess
++        stdinEnabled: true
++        command: [Quickshell.env("HOME") + "/.local/bin/ssh-add-server", "--gui", nameField.text, hostField.text, userField.text, portField.text]
++        onStarted: {
++            write(passwordField.text + "\n");
++            stdinEnabled = false;
++            passwordField.text = "";
++        }
++        onExited: function(exitCode, exitStatus) {
++            if (exitCode === 0) {
++                root.editing = false;
++                root.confirmSave = false;
++                root.error = "";
++                listProcess.running = true;
++            } else {
++                root.confirmSave = false;
++                root.error = "Could not save the server. Check the fields, keyring and SSH config.";
++            }
++        }
++    }
++    StyledRect {
++        anchors.fill: parent
++        color: Colours.tPalette.m3surface
++        radius: Tokens.rounding.extraLarge
++    }
++    ColumnLayout {
++        anchors.fill: parent
++        anchors.margins: 24
++        Keys.onEscapePressed: root.visible = false
++        spacing: 12
++        RowLayout {
++            Layout.fillWidth: true
++            StyledText { text: root.editing ? "Add server" : "SSH servers"; font: Tokens.font.title.large; Layout.fillWidth: true }
++            TextButton { text: "Close"; onClicked: root.visible = false }
++        }
++        StyledText { visible: !!root.error; text: root.error; color: Colours.palette.m3error; wrapMode: Text.WordWrap; Layout.fillWidth: true }
++        StyledTextField {
++            id: searchField
++            visible: !root.editing
++            placeholderText: "Search servers"
++            leadingIcon: "search"
++            Layout.fillWidth: true
++            onTextChanged: serverList.currentIndex = 0
++            Keys.onDownPressed: serverList.currentIndex = Math.min(serverList.count - 1, serverList.currentIndex + 1)
++            Keys.onUpPressed: serverList.currentIndex = Math.max(0, serverList.currentIndex - 1)
++            onAccepted: {
++                if (serverList.count > 0)
++                    root.connectHost(serverList.model[serverList.currentIndex]);
++            }
++        }
++        ListView {
++            id: serverList
++            visible: !root.editing
++            Layout.fillWidth: true
++            Layout.fillHeight: true
++            clip: true
++            spacing: 3
++            model: root.hosts.filter(host => host.toLowerCase().includes(searchField.text.toLowerCase()))
++            delegate: StyledRect {
++                id: row
++                required property string modelData
++                required property int index
++                width: serverList.width
++                height: 54
++                radius: Tokens.rounding.medium
++                color: serverList.currentIndex === index ? Colours.tPalette.m3secondaryContainer : Colours.tPalette.m3surfaceContainer
++                RowLayout {
++                    anchors.fill: parent
++                    anchors.leftMargin: 16
++                    anchors.rightMargin: 16
++                    spacing: 12
++                    StyledRect {
++                        implicitWidth: 36
++                        implicitHeight: 36
++                        radius: 18
++                        color: Colours.tPalette.m3secondaryContainer
++                        MaterialIcon { anchors.centerIn: parent; text: "dns"; color: Colours.palette.m3onSecondaryContainer }
++                    }
++                    StyledText { text: row.modelData; Layout.fillWidth: true; elide: Text.ElideRight }
++                    MaterialIcon { text: "chevron_right"; color: Colours.palette.m3onSurfaceVariant }
++                }
++                StateLayer {
++                    radius: row.radius
++                    onClicked: root.connectHost(row.modelData)
++                }
++            }
++        }
++        TextButton {
++            visible: !root.editing
++            text: "+ Add server"
++            type: ButtonBase.Tonal
++            Layout.fillWidth: true
++            onClicked: { root.editing = true; root.error = ""; nameField.forceActiveFocus(); }
++        }
++        ColumnLayout {
++            visible: root.editing
++            Layout.fillWidth: true
++            Layout.fillHeight: true
++            StyledTextField { id: nameField; onTextEdited: root.confirmSave = false; placeholderText: "Menu name"; Layout.fillWidth: true }
++            StyledTextField { id: hostField; onTextEdited: root.confirmSave = false; placeholderText: "Server address"; Layout.fillWidth: true }
++            StyledTextField { id: userField; onTextEdited: root.confirmSave = false; placeholderText: "User"; Layout.fillWidth: true }
++            StyledTextField { id: portField; onTextEdited: root.confirmSave = false; placeholderText: "Port"; text: "22"; Layout.fillWidth: true }
++            StyledTextField { id: passwordField; onTextEdited: root.confirmSave = false; placeholderText: "Password"; echoMode: TextInput.Password; Layout.fillWidth: true }
++            StyledText { visible: root.confirmSave; text: "Save this server and password? Existing data with the same name or address will be replaced."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
++            Item { Layout.fillHeight: true }
++            RowLayout {
++                Layout.fillWidth: true
++                TextButton { text: "Back"; onClicked: { passwordField.text = ""; root.editing = false; root.confirmSave = false; } }
++                Item { Layout.fillWidth: true }
++                TextButton { text: root.confirmSave ? "Confirm" : "Save"; disabled: saveProcess.running; onClicked: {
++                    if (root.confirmSave) {
++                        saveProcess.stdinEnabled = true;
++                        saveProcess.running = true;
++                    } else {
++                        root.save();
++                    }
++                } }
++            }
++        }
++    }
++}
+diff --git a/shell.qml b/shell.qml
+index 60cb8774..2a8f8bbe 100644
+--- a/shell.qml
++++ b/shell.qml
+@@ -6,11 +6,13 @@
+ 
+ import QtQuick
+ import Quickshell
++import Quickshell.Io
+ import Caelestia.Config
+ import qs.services
+ import qs.modules.areapicker
+ import qs.modules.background
+ import qs.modules.drawers
++import qs.modules.ssh
+ import qs.modules.lock
+ import qs.daemons
+ 
+@@ -40,6 +42,12 @@ ShellRoot {
+         value: root
+     }
+ 
++    IpcHandler {
++        target: "ssh"
++        function open(): void { sshWindow.open(); }
++    }
++    SshWindow { id: sshWindow }
++
+     // Modules
+     Background {}
+     Drawers {}
