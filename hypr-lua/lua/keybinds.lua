@@ -173,6 +173,8 @@ bind("XF86AudioStop", global("mediaStop"), "stop", locked)
 
 -- Screenshot
 section("Capture")
+-- Fn+Esc produces Print on compact keyboards: open after release so Escape cannot cancel the picker while held.
+bind("Print", shell("picker openFreezeClip"), "screenshot area (frozen) -> clipboard", { release = true })
 bind(M("Print"), exec(S .. "/screenshot.sh now"), "screenshot now")
 bind(M("SHIFT + Print"), global("screenshotFreezeClip"), "screenshot area (frozen) -> clipboard")
 bind(M("CTRL + Print"), exec(S .. "/screenshot.sh in 5"), "screenshot in 5s")
