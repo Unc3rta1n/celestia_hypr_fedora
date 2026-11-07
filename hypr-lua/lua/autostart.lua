@@ -3,6 +3,9 @@
 local v = require("lua.vars")
 
 hl.on("hyprland.start", function()
+    -- Preserve the compositor log across crashes and reboots.
+    hl.exec_cmd(v.scriptsDir .. "/hyprland-log")
+
     -- Initial boot (no-op while ~/.config/hypr/.initial_startup_done exists)
     hl.exec_cmd(v.hyprDir .. "/initial-boot.sh")
 

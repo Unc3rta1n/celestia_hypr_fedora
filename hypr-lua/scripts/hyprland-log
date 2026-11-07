@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Keep each compositor's runtime log in the persistent, size-limited system journal.
+set -euo pipefail
+
+: "${XDG_RUNTIME_DIR:?Hyprland runtime directory is missing}"
+: "${HYPRLAND_INSTANCE_SIGNATURE:?Hyprland instance is missing}"
+[[ $HYPRLAND_INSTANCE_SIGNATURE =~ ^[a-zA-Z0-9_]+$ ]] || {
+    echo "Invalid Hyprland instance signature" >&2
+    exit 1
+}
+
+instance=$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE
+read -r compositor_pid < "$instance/hyprland.lock"
+[[ $compositor_pid =~ ^[0-9]+$ && -r $instance/hyprland.log ]] || {
+    echo "Hyprland PID or log is unavailable" >&2
+    exit 1
+}
+unit=hyprland-log-$HYPRLAND_INSTANCE_SIGNATURE.service
+# Repeated starts must not replay the entire log or create duplicate followers.
+if systemctl --user is-active --quiet "$unit"; then
+    exit 0
+fi
+
+# A separate service survives the compositor crash; tail drains the log and exits
+# when that compositor dies. A new instance gets its own service and journal unit.
+exec systemd-run --user --collect --unit="$unit" \
+    --property=StandardOutput=journal --property=StandardError=journal \
+    --property=SyslogIdentifier=hyprland-log \
+    --property=LogRateLimitIntervalSec=0 \
+    /usr/bin/tail --pid="$compositor_pid" --sleep-interval=0.2 -n +1 -f \
+    "$instance/hyprland.log"
