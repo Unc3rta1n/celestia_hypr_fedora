@@ -28,6 +28,7 @@ function picker(freeze = false) {
         overlay: { visible: true }, border: { visible: true },
         closeAnim: { running: false, start() { context.loader.closing = true; } },
         Qt: { rect: (...values) => values, resolvedUrl: value => value,
+            BlankCursor: 0, CrossCursor: 1,
             styleHints: { startDragDistance: 10 } },
         Quickshell: { processId: 1, execDetached() {} },
         Tr: { tr: value => value },
@@ -39,6 +40,7 @@ function picker(freeze = false) {
     context.checkClientRects = vm.runInContext(
         `(x, y) => {${handler('function checkClientRects(x: real, y: real): void {')}}`, context);
     const release = () => vm.runInContext(`(() => {${handler('onReleased: {')}})()`, context);
+    const cursor = () => vm.runInContext(source.match(/^\s+cursorShape: (.+)$/m)[1], context);
     const frame = () => {
         context.hasContent = true;
         vm.runInContext(`(() => {${handler('onHasContentChanged: {', 12)}})()`, context);
@@ -56,7 +58,7 @@ function picker(freeze = false) {
         context.sw = Math.abs(context.sx - context.ex);
         context.sh = Math.abs(context.sy - context.ey);
     };
-    return { context, saves, release, frame, press, move };
+    return { context, saves, release, frame, press, move, cursor };
 }
 
 test('hover over a window after release preserves the selected crop', () => {
@@ -158,4 +160,24 @@ test('a new press resets the previous drag decision', () => {
     release();
     assert.equal(saves.length, 2);
     assert.deepEqual(Array.from(saves[1][2]), [100, 60, 20, 20]);
+});
+
+test('frozen picker hides the cursor until its screen frame is ready', () => {
+    const { context, cursor } = picker(true);
+    assert.equal(cursor(), context.Qt.BlankCursor);
+    context.screencopy.item = { hasContent: false };
+    assert.equal(cursor(), context.Qt.BlankCursor);
+    context.screencopy.item.hasContent = true;
+    assert.equal(cursor(), context.Qt.CrossCursor);
+});
+
+test('live capture hides the cursor and restores it when a save fails', () => {
+    const { context, cursor, release, frame, saves } = picker();
+    assert.equal(cursor(), context.Qt.CrossCursor);
+    release();
+    assert.equal(cursor(), context.Qt.BlankCursor);
+    frame();
+    assert.equal(cursor(), context.Qt.BlankCursor);
+    saves[0][4]();
+    assert.equal(cursor(), context.Qt.CrossCursor);
 });

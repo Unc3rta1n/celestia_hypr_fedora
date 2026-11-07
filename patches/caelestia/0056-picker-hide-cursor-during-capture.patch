@@ -1,0 +1,23 @@
+diff --git a/modules/areapicker/Picker.qml b/modules/areapicker/Picker.qml
+index 30146a30..dada9859 100644
+--- a/modules/areapicker/Picker.qml
++++ b/modules/areapicker/Picker.qml
+@@ -143,7 +143,9 @@ MouseArea {
+     anchors.fill: parent
+     opacity: 0
+     hoverEnabled: true
+-    cursorShape: Qt.CrossCursor
++    // Hyprland can bake software cursors into the frame even with paintCursor disabled.
++    // Keep ours hidden until the frozen frame is ready, and throughout a live capture.
++    cursorShape: (loader.freeze && !(screencopy.item?.hasContent ?? false)) || capturePending ? Qt.BlankCursor : Qt.CrossCursor
+ 
+     Component.onCompleted: {
+         Hypr.extras.refreshOptions();
+@@ -305,6 +307,7 @@ MouseArea {
+ 
+         sourceComponent: ScreencopyView {
+             captureSource: root.screen
++            paintCursor: false
+ 
+             onHasContentChanged: {
+                 if (hasContent && root.capturePending && !root.loader.freeze && !root.loader.closing) {
