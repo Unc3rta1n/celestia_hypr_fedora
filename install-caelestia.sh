@@ -42,7 +42,7 @@ sudo dnf install -y \
     ddcutil brightnessctl lm_sensors lm_sensors-devel NetworkManager \
     google-rubik-fonts cascadia-code-nf-fonts cascadia-mono-nf-fonts \
     gtk3-devel cairo-devel pango-devel \
-    python3-pillow python3-pip python3-devel \
+    python3-pillow python3-pip python3-devel python3-dbus python3-gobject \
     gpu-screen-recorder tesseract tesseract-langpack-rus tesseract-langpack-eng zbar adw-gtk3-theme udiskie
 
 step "wl-clip-persist (cargo; not packaged for Fedora)"

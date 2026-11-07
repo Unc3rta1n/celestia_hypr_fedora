@@ -1,0 +1,45 @@
+diff --git a/modules/bar/popouts/Bluetooth.qml b/modules/bar/popouts/Bluetooth.qml
+index 97b65c6d..3838313e 100644
+--- a/modules/bar/popouts/Bluetooth.qml
++++ b/modules/bar/popouts/Bluetooth.qml
+@@ -98,25 +98,15 @@ ColumnLayout {
+                 text: Icons.getBluetoothIcon(device.modelData.icon)
+             }
+ 
+-            ColumnLayout {
++            StyledText {
+                 Layout.leftMargin: Tokens.spacing.extraSmall
+                 Layout.rightMargin: Tokens.spacing.extraSmall
+                 Layout.fillWidth: true
+-                spacing: Tokens.spacing.extraSmall
+-
+-                StyledText {
+-                    Layout.fillWidth: true
+-                    text: device.modelData.name
+-                    elide: Text.ElideRight
+-                }
+-
+-                StyledText {
+-                    Layout.fillWidth: true
+-                    visible: cmf.supported && device.modelData.connected
+-                    text: "L: %1 · R: %2 · C: %3".arg(cmf.level("left")).arg(cmf.level("right")).arg(cmf.level("case"))
+-                    font: Tokens.font.body.small
+-                    color: Colours.palette.m3onSurfaceVariant
+-                }
++                text: cmf.supported && device.modelData.connected
++                    ? "L%1  R%2  C%3".arg(cmf.level("left")).arg(cmf.level("right")).arg(cmf.level("case"))
++                    : device.modelData.name
++                Accessible.name: device.modelData.name + (cmf.supported && device.modelData.connected ? ", " + text : "")
++                elide: Text.ElideRight
+             }
+ 
+             CmfBattery {
+@@ -127,7 +117,7 @@ ColumnLayout {
+             }
+ 
+             MaterialIcon {
+-                visible: device.modelData.state === BluetoothDeviceState.Connected
++                visible: device.modelData.state === BluetoothDeviceState.Connected && !cmf.supported
+                 text: device.modelData.batteryAvailable ? Icons.getBatteryIcon(device.modelData.battery) : "battery_alert"
+                 color: device.modelData.batteryAvailable && device.modelData.battery < 0.2 ? Colours.palette.m3error : Colours.palette.m3onSurfaceVariant
+             }

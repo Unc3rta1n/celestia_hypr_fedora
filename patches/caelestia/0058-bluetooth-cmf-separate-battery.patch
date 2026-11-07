@@ -1,0 +1,109 @@
+diff --git a/modules/bar/popouts/Bluetooth.qml b/modules/bar/popouts/Bluetooth.qml
+index d2d1eff0..bf61bfa1 100644
+--- a/modules/bar/popouts/Bluetooth.qml
++++ b/modules/bar/popouts/Bluetooth.qml
+@@ -98,12 +98,32 @@ ColumnLayout {
+                 text: Icons.getBluetoothIcon(device.modelData.icon)
+             }
+ 
+-            StyledText {
++            ColumnLayout {
+                 Layout.leftMargin: Tokens.spacing.extraSmall
+                 Layout.rightMargin: Tokens.spacing.extraSmall
+                 Layout.fillWidth: true
+-                text: device.modelData.name
+-                elide: Text.ElideRight
++                spacing: Tokens.spacing.extraSmall
++
++                StyledText {
++                    Layout.fillWidth: true
++                    text: device.modelData.name
++                    elide: Text.ElideRight
++                }
++
++                StyledText {
++                    Layout.fillWidth: true
++                    visible: cmf.supported && device.modelData.connected
++                    text: "L: %1 · R: %2 · C: %3".arg(cmf.level("left")).arg(cmf.level("right")).arg(cmf.level("case"))
++                    font: Tokens.font.body.small
++                    color: Colours.palette.m3onSurfaceVariant
++                }
++            }
++
++            CmfBattery {
++                id: cmf
++                address: device.modelData.address
++                supported: device.modelData.name === "CMF Buds Pro 2"
++                active: supported && device.modelData.connected && root.popouts.currentName === "bluetooth"
+             }
+ 
+             MaterialIcon {
+diff --git a/modules/bar/popouts/CmfBattery.qml b/modules/bar/popouts/CmfBattery.qml
+new file mode 100644
+index 00000000..46385e36
+--- /dev/null
++++ b/modules/bar/popouts/CmfBattery.qml
+@@ -0,0 +1,63 @@
++pragma ComponentBehavior: Bound
++
++import QtQuick
++import Quickshell
++import Quickshell.Io
++
++QtObject {
++    id: root
++
++    required property string address
++    required property bool supported
++    required property bool active
++    property var levels: ({})
++
++    function level(part: string): string {
++        const value = levels[part];
++        return Number.isInteger(value) && value >= 0 && value <= 100 ? `${value}%` : "—";
++    }
++
++    function refresh(): void {
++        if (active && reader && !reader.running)
++            reader.running = true;
++    }
++
++    onActiveChanged: {
++        levels = {};
++        if (active)
++            refresh();
++        else if (reader)
++            reader.running = false;
++    }
++    onAddressChanged: {
++        levels = {};
++        if (reader)
++            reader.running = false;
++        Qt.callLater(refresh);
++    }
++    Component.onCompleted: refresh()
++
++    readonly property Process reader: Process {
++        command: ["/usr/bin/python3", Quickshell.env("HOME") + "/.config/hypr/scripts/cmf-battery.py", root.address]
++        stdout: StdioCollector {
++            onStreamFinished: {
++                if (!root.active)
++                    return;
++                try {
++                    const data = JSON.parse(text);
++                    root.levels = data && typeof data === "object" ? data : {};
++                } catch (error) {
++                    root.levels = {};
++                    console.warn("CMF battery: invalid helper output", error);
++                }
++            }
++        }
++    }
++
++    readonly property Timer poll: Timer {
++        interval: 30000
++        running: root.active
++        repeat: true
++        onTriggered: root.refresh()
++    }
++}

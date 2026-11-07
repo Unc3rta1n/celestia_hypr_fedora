@@ -1,0 +1,38 @@
+diff --git a/modules/bar/popouts/CmfBattery.qml b/modules/bar/popouts/CmfBattery.qml
+index 46385e36..9e4460c3 100644
+--- a/modules/bar/popouts/CmfBattery.qml
++++ b/modules/bar/popouts/CmfBattery.qml
+@@ -38,14 +38,18 @@ QtObject {
+     Component.onCompleted: refresh()
+ 
+     readonly property Process reader: Process {
+-        command: ["/usr/bin/python3", Quickshell.env("HOME") + "/.config/hypr/scripts/cmf-battery.py", root.address]
+-        stdout: StdioCollector {
+-            onStreamFinished: {
++        command: ["/usr/bin/python3", Quickshell.env("HOME") + "/.config/hypr/scripts/cmf-battery.py", "--watch", root.address]
++        onRunningChanged: {
++            if (!running)
++                root.levels = {};
++        }
++        stdout: SplitParser {
++            onRead: data => {
+                 if (!root.active)
+                     return;
+                 try {
+-                    const data = JSON.parse(text);
+-                    root.levels = data && typeof data === "object" ? data : {};
++                    const snapshot = JSON.parse(data);
++                    root.levels = snapshot && typeof snapshot === "object" ? snapshot : {};
+                 } catch (error) {
+                     root.levels = {};
+                     console.warn("CMF battery: invalid helper output", error);
+@@ -54,7 +58,8 @@ QtObject {
+         }
+     }
+ 
+-    readonly property Timer poll: Timer {
++    // Restart failed readers; a healthy reader polls and receives events itself.
++    readonly property Timer retry: Timer {
+         interval: 30000
+         running: root.active
+         repeat: true
