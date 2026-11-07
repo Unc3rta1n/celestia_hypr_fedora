@@ -13,6 +13,16 @@ replaced by a locally patched [caelestia-shell](https://github.com/caelestia-dot
 
 Then log out/in. Rollback to the hyprlang config: `./deploy-lua.sh --rollback`.
 
+### Hyprland crash logs
+
+`scripts/hyprland-log` copies each session's runtime log into the persistent system
+journal, which rotates logs within journald's disk limits. The follower runs outside
+Hyprland and exits after its compositor process dies; each restart gets a new follower.
+After a crash or reboot: `journalctl -b -1 -t hyprland-log` (omit `-b -1` for this boot).
+This requires persistent journald storage, enabled on this machine. Safe Mode skips
+the user config, so its own log follower starts only after the config is loaded.
+Integration check (inside a user systemd session): `bash tests/hyprland-log.sh`.
+
 ### Firefox
 
 `caelestia-pywalfox.path` renders the scheme into `~/.cache/wal/colors.json` and runs `pywalfox update`.
@@ -54,7 +64,7 @@ A patch that no longer applies stops it before anything is installed. Rollback:
 | `systemd/` | `caelestia-kde-colors.path`: KDE apps follow the caelestia scheme; `caelestia-pywalfox.path`: Firefox follows it via Pywalfox (see below); `10-lid-suspend.conf`: lid suspends even with external monitors; `cpu-power-limit.service`: CPU PL1 45 W / PL2 65 W at boot and after resume (shared cooler, the CPU throttled at 97-100 °C in games) (both installed by `setup-desktop.sh`) |
 | `vscode/` | caelestia's VS Code extension (theme "Caelestia") |
 | `dnf/` | `snapper.actions`: snapper pre/post snapshots around dnf5 transactions (installed by `setup-desktop.sh`, needs `libdnf5-plugin-actions`) |
-| `zsh/` | shell setup copies: `zshrc` -> `~/.zshrc`, `extras.zsh` + `cheatsheet.txt` -> `~/.config/zsh/`, `starship.toml` -> `~/.config/`, `atuin-config.toml` -> `~/.config/atuin/config.toml`, `fastfetch-config-mini.jsonc` -> `~/.config/fastfetch/config-mini.jsonc`, `ssh-askpass-keyring` -> `~/.local/bin/` (ssh passwords from GNOME Keyring, asks on the tty when a host is missing) (see below) |
+| `zsh/` | shell setup copies: `zshrc` -> `~/.zshrc`, `extras.zsh` + `cheatsheet.txt` -> `~/.config/zsh/`, `starship.toml` -> `~/.config/`, `atuin-config.toml` -> `~/.config/atuin/config.toml`, `fastfetch-config-mini.jsonc` -> `~/.config/fastfetch/config-mini.jsonc`, `ssh-askpass-keyring` and `ssh-add-server` -> `~/.local/bin/` (ssh passwords from GNOME Keyring, asks on the tty when a host is missing) (see below) |
 
 ## Patches
 
@@ -124,6 +134,17 @@ Super+Ctrl+Shift+R pause.
 53. "Now playing": check the high-resolution cover every 100 ms (8 retries, up to 800 ms instead of 3.2 s); retain the 800 ms metadata settle delay and existing duplicate suppression.
 54. "Now playing": supersede the cover wait with immediate display after metadata settles; upgrade the same toast to the catalogue cover when available, keeping its original track identity and fallback. The media popout already updates its cover through `Players.getArtUrl`.
 55. "Now playing": reduce metadata debounce from 800 to 200 ms; replay of eight recorded Firefox/Yandex Music transitions produced one correct toast per track, approximately 422–493 ms after a skip. Keep duplicate suppression and progressive artwork updates.
+56. area picker: hide the pointer while obtaining the frozen frame and during live captures, then show the selection crosshair; explicitly disable cursor painting as Hyprland software cursors can already be baked into screen frames.
+57. "Now playing": suppress Telegram media toasts by raw player identity, including voice messages with opaque filenames; ordinary Telegram notifications remain unchanged.
+58. Bluetooth popout: CMF Buds Pro 2 show separate left/right/case battery levels using a read-only RFCOMM query every 30 seconds while the popout is open. Missing levels show “—”; no battery or audio settings are written. Requires `hypr-lua/scripts/cmf-battery.py` deployed to `~/.config/hypr/scripts/`, system `python3-dbus` and `python3-gobject`. The case/right bud may omit their readings while unavailable. Protocol reference: [CMF Control](https://github.com/JScoder4005/cmf-control).
+
+59. CMF battery popout: keep RFCOMM open while the Bluetooth menu is active; consume both replies (`0x4007`) and battery notifications (`0xE001`), including case readings sent when a bud enters/leaves the case. Poll every 30 seconds on the same connection; missing readings remain “—”. Uses the helper’s `--watch` mode.
+
+60. CMF battery popout: show `L100% R100% C10%` in a single row instead of the connected device name and a second battery line. Hide the duplicate aggregate battery icon; retain the device name for accessibility. Other devices and disconnected CMF keep their names.
+
+61. Utilities: single-row Keep awake and recorder cards, smaller padding and icons; recording history opens from a library button instead of always occupying space. Preserve recording modes, active timer/pause/stop controls, history actions and idle inhibition. Aquarium remains deferred.
+
+62. SSH centered overlay: search, browse and connect to hosts from `~/.ssh/config`, or add a host with its password stored in GNOME Keyring. Requires `zsh/ssh-add-server` installed in `~/.local/bin/` and `secret-tool`.
 
 Cursor themes can be managed by the standalone [Cursor Theme Manager fork](https://github.com/Unc3rta1n/cursor-theme-manager)
 checked out at `~/cursor-theme-manager`. Hyprland starts its hidden host at login to
@@ -145,3 +166,10 @@ git clone --depth 1 https://github.com/MichaelAquilina/zsh-you-should-use $C/you
 
 Then copy the files as listed in the Layout table. `.zshrc` also sources `~/.config/zsh/win.zsh` (win10 VM helpers,
 not in the repo): drop that line on a machine without it.
+
+Use Super+C to open the centered Caelestia SSH panel and add or connect to a server. Alternatively, add an SSH server with `ssh-add-server`. The command prompts for the menu name, address, user, port and password, saves the password in GNOME Keyring using `secret-tool` (libsecret), and backs up an existing SSH config before changing it. Existing entries and passwords require confirmation. Select the new host with Super+C.
+
+## TODO
+
+- [Аквариум в правой панели](TODO-sidebar-aquarium.md)
+- [Управление CMF Buds Pro 2](TODO-cmf-controls.md)
