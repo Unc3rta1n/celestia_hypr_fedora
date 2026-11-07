@@ -58,6 +58,21 @@ test('scrolling Shorts never toasts or starts cover lookup', () => {
     assert.equal(h.context.lastNowPlayingKey, '');
 });
 
+test('Telegram media never toasts or starts cover lookup, regardless of title or URL', () => {
+    for (const identity of ['TelegramDesktop', 'Telegram Desktop', 'Telegram']) {
+        for (const url of [undefined, 'file:///tmp/voice.ogg']) {
+            const active = player(url);
+            active.identity = identity;
+            active.trackTitle = 'A'.repeat(512);
+            const h = harness(active);
+            h.notify();
+            assert.equal(h.toasts.length, 0, identity);
+            assert.equal(h.artCalls(), 0, identity);
+            assert.equal(h.context.lastNowPlayingKey, '');
+        }
+    }
+});
+
 test('music and ordinary videos keep their toast, including short tracks', () => {
     for (const url of ['https://music.yandex.ru/', 'https://music.youtube.com/watch?v=abcdefghijk',
         'https://www.youtube.com/watch?v=abcdefghijk', 'file:///music/song.flac',
