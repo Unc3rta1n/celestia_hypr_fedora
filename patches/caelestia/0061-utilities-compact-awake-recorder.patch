@@ -1,0 +1,303 @@
+diff --git a/modules/utilities/cards/IdleInhibit.qml b/modules/utilities/cards/IdleInhibit.qml
+index 45c2f450..34c24a59 100644
+--- a/modules/utilities/cards/IdleInhibit.qml
++++ b/modules/utilities/cards/IdleInhibit.qml
+@@ -10,7 +10,7 @@ import qs.services
+ StyledRect {
+     id: root
+ 
+-    readonly property real nonAnimHeight: layout.implicitHeight + (RuntimeState.inhibitIdle ? activeChip.implicitHeight + activeChip.anchors.topMargin : 0) + Tokens.padding.extraLargeIncreased
++    readonly property real nonAnimHeight: layout.implicitHeight + Tokens.padding.medium * 2
+ 
+     implicitHeight: nonAnimHeight
+ 
+@@ -24,100 +24,32 @@ StyledRect {
+         anchors.top: parent.top
+         anchors.left: parent.left
+         anchors.right: parent.right
+-        anchors.margins: Tokens.padding.large
++        anchors.margins: Tokens.padding.medium
+         spacing: Tokens.spacing.medium
+ 
+-        StyledRect {
+-            implicitWidth: implicitHeight
+-            implicitHeight: icon.implicitHeight + Tokens.padding.large
+-
+-            radius: Tokens.rounding.full
+-            color: RuntimeState.inhibitIdle ? Colours.palette.m3secondary : Colours.palette.m3secondaryContainer
+-
+-            MaterialIcon {
+-                id: icon
+-
+-                anchors.centerIn: parent
+-                text: "coffee"
+-                color: RuntimeState.inhibitIdle ? Colours.palette.m3onSecondary : Colours.palette.m3onSecondaryContainer
+-                fontStyle: Tokens.font.icon.large
+-            }
++        MaterialIcon {
++            text: "coffee"
++            color: RuntimeState.inhibitIdle ? Colours.palette.m3primary : Colours.palette.m3onSurfaceVariant
++            fontStyle: Tokens.font.icon.medium
+         }
+ 
+-        ColumnLayout {
++        StyledText {
+             Layout.fillWidth: true
+-            spacing: 0
+-
+-            StyledText {
+-                Layout.fillWidth: true
+-                text: Tr.trCtx("Keep awake", "idle inhibitor")
+-                font: Tokens.font.body.medium
+-                elide: Text.ElideRight
+-            }
+-
+-            StyledText {
+-                Layout.fillWidth: true
+-                text: RuntimeState.inhibitIdle ? Tr.trCtx("Preventing sleep mode", "idle inhibitor") : Tr.trCtx("Normal power management", "idle inhibitor")
+-                color: Colours.palette.m3onSurfaceVariant
+-                font: Tokens.font.body.small
+-                elide: Text.ElideRight
+-            }
++            text: Tr.trCtx("Keep awake", "idle inhibitor")
++            font: Tokens.font.body.medium
++            elide: Text.ElideRight
+         }
+ 
+         StyledSwitch {
++            Accessible.name: Tr.trCtx("Keep awake", "idle inhibitor")
++            Accessible.description: RuntimeState.inhibitIdle
++                ? Tr.trCtx("Preventing sleep mode", "idle inhibitor") + ". " + Tr.tr("Active since %1").arg(Tr.formatDateTime(new Date(RuntimeState.inhibitingIdleSince), Units.twelveHourClock ? "hh:mm a" : "hh:mm"))
++                : Tr.trCtx("Normal power management", "idle inhibitor")
+             checked: RuntimeState.inhibitIdle
+             onToggled: RuntimeState.inhibitIdle = checked
+         }
+     }
+ 
+-    Loader {
+-        id: activeChip
+-
+-        asynchronous: true
+-        anchors.bottom: parent.bottom
+-        anchors.left: parent.left
+-        anchors.topMargin: Tokens.spacing.large
+-        anchors.bottomMargin: RuntimeState.inhibitIdle ? Tokens.padding.large : -implicitHeight
+-        anchors.leftMargin: Tokens.padding.large
+-
+-        opacity: RuntimeState.inhibitIdle ? 1 : 0
+-        scale: RuntimeState.inhibitIdle ? 1 : 0.5
+-
+-        Component.onCompleted: active = Qt.binding(() => opacity > 0)
+-
+-        sourceComponent: StyledRect {
+-            implicitWidth: activeText.implicitWidth + Tokens.padding.medium * 2
+-            implicitHeight: activeText.implicitHeight + Tokens.padding.small
+-
+-            radius: Tokens.rounding.full
+-            color: Colours.palette.m3primary
+-
+-            StyledText {
+-                id: activeText
+-
+-                anchors.centerIn: parent
+-                // TRANSLATORS: %1 = a clock time, e.g. 14:30
+-                text: Tr.tr("Active since %1").arg(Tr.formatDateTime(new Date(RuntimeState.inhibitingIdleSince), Units.twelveHourClock ? "hh:mm a" : "hh:mm"))
+-                color: Colours.palette.m3onPrimary
+-                font: Tokens.font.body.builders.small.size(Math.round(Tokens.font.body.small.pointSize * 0.9)).build()
+-            }
+-        }
+-
+-        Behavior on anchors.bottomMargin {
+-            Anim {}
+-        }
+-
+-        Behavior on opacity {
+-            Anim {
+-                type: Anim.StandardSmall
+-            }
+-        }
+-
+-        Behavior on scale {
+-            Anim {}
+-        }
+-    }
+-
+     Behavior on implicitHeight {
+         Anim {}
+     }
+diff --git a/modules/utilities/cards/Record.qml b/modules/utilities/cards/Record.qml
+index cdaaad0b..dab84ff2 100644
+--- a/modules/utilities/cards/Record.qml
++++ b/modules/utilities/cards/Record.qml
+@@ -15,7 +15,8 @@ StyledRect {
+ 
+     required property var props
+     required property ScreenState screenState
+-    readonly property real nonAnimHeight: btnLayout.implicitHeight + listOrControls.implicitHeight + layout.spacing + layout.anchors.margins * 2
++    readonly property bool showDetails: listOrControls.running || root.props.recordingListExpanded
++    readonly property real nonAnimHeight: btnLayout.implicitHeight + (showDetails ? listOrControls.implicitHeight + layout.spacing : 0) + layout.anchors.margins * 2
+ 
+     implicitHeight: layout.implicitHeight + layout.anchors.margins * 2
+ 
+@@ -30,54 +31,27 @@ StyledRect {
+         id: layout
+ 
+         anchors.fill: parent
+-        anchors.margins: Tokens.padding.large
+-        spacing: Tokens.spacing.medium
++        anchors.margins: Tokens.padding.medium
++        spacing: Tokens.spacing.small
+ 
+         RowLayout {
+             id: btnLayout
+ 
+             spacing: Tokens.spacing.medium
+ 
+-            StyledRect {
+-                implicitWidth: implicitHeight
+-                implicitHeight: {
+-                    const h = icon.implicitHeight + Tokens.padding.small * 2;
+-                    return h - (h % 2);
+-                }
+-
+-                radius: Tokens.rounding.full
+-                color: Recorder.running ? Colours.palette.m3secondary : Colours.palette.m3secondaryContainer
+-
+-                MaterialIcon {
+-                    id: icon
+-
+-                    anchors.centerIn: parent
+-                    anchors.verticalCenterOffset: 1
+-                    text: "screen_record"
+-                    color: Recorder.running ? Colours.palette.m3onSecondary : Colours.palette.m3onSecondaryContainer
+-                    fontStyle: Tokens.font.icon.large
+-                }
++            MaterialIcon {
++                text: "screen_record"
++                color: Recorder.running ? Colours.palette.m3error : Colours.palette.m3onSurfaceVariant
++                fontStyle: Tokens.font.icon.medium
+             }
+ 
+-            ColumnLayout {
++            StyledText {
+                 Layout.fillWidth: true
+-                spacing: 0
+-
+-                StyledText {
+-                    Layout.fillWidth: true
+-                    text: Tr.tr("Screen recorder")
+-                    font: Tokens.font.body.medium
+-                    elide: Text.ElideRight
+-                }
+-
+-                StyledText {
+-                    Layout.fillWidth: true
+-                    text: Recorder.paused ? Tr.trCtx("Paused", "recorder state") : Recorder.running ? Tr.trCtx("Running...", "recorder state") : Tr.trCtx("Ready", "recorder state")
+-                    color: Colours.palette.m3onSurfaceVariant
+-                    font: Tokens.font.body.small
+-                    elide: Text.ElideRight
+-                    animate: true
+-                }
++                text: Recorder.paused ? Tr.trCtx("Paused", "recorder state") : Recorder.running ? Tr.trCtx("Running...", "recorder state") : Tr.tr("Record")
++                Accessible.name: Tr.tr("Screen recorder") + ", " + text
++                font: Tokens.font.body.medium
++                elide: Text.ElideRight
++                animate: true
+             }
+ 
+             SplitButton {
+@@ -113,6 +87,14 @@ StyledRect {
+                     }
+                 ]
+             }
++
++            IconButton {
++                icon: root.props.recordingListExpanded ? "expand_less" : "video_library"
++                type: IconButton.Text
++                disabled: Recorder.running
++                Accessible.name: root.props.recordingListExpanded ? Tr.tr("Hide recordings") : Tr.tr("Show recordings")
++                onClicked: root.props.recordingListExpanded = !root.props.recordingListExpanded
++            }
+         }
+ 
+         Loader {
+@@ -120,6 +102,8 @@ StyledRect {
+ 
+             property bool running: Recorder.running
+ 
++            visible: root.showDetails
++
+             asynchronous: true
+             Layout.fillWidth: true
+             Layout.preferredHeight: implicitHeight
+diff --git a/modules/utilities/cards/RecordingList.qml b/modules/utilities/cards/RecordingList.qml
+index 0f0842f6..19855c5d 100644
+--- a/modules/utilities/cards/RecordingList.qml
++++ b/modules/utilities/cards/RecordingList.qml
+@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
+ import QtQuick
+ import QtQuick.Layouts
+ import Quickshell
+-import Quickshell.Widgets
+ import Caelestia.Config
+ import Caelestia.I18n
+ import Caelestia.Models
+@@ -21,37 +20,6 @@ ColumnLayout {
+ 
+     spacing: 0
+ 
+-    WrapperMouseArea {
+-        Layout.fillWidth: true
+-
+-        cursorShape: Qt.PointingHandCursor
+-        onClicked: root.props.recordingListExpanded = !root.props.recordingListExpanded
+-
+-        RowLayout {
+-            spacing: Tokens.spacing.medium
+-
+-            MaterialIcon {
+-                Layout.alignment: Qt.AlignVCenter
+-                text: "list"
+-                fontStyle: Tokens.font.icon.large
+-            }
+-
+-            StyledText {
+-                Layout.alignment: Qt.AlignVCenter
+-                Layout.fillWidth: true
+-                text: Tr.tr("Recordings")
+-                font: Tokens.font.body.medium
+-            }
+-
+-            IconButton {
+-                icon: root.props.recordingListExpanded ? "unfold_less" : "unfold_more"
+-                type: IconButton.Text
+-                label.animate: true
+-                onClicked: root.props.recordingListExpanded = !root.props.recordingListExpanded
+-            }
+-        }
+-    }
+-
+     StyledListView {
+         id: list
+ 
+@@ -63,7 +31,10 @@ ColumnLayout {
+ 
+         Layout.fillWidth: true
+         Layout.rightMargin: -Tokens.spacing.small
+-        implicitHeight: (Tokens.font.body.large.pointSize + Tokens.padding.small) * (root.props.recordingListExpanded ? 10 : 3)
++        implicitHeight: !root.props.recordingListExpanded ? 0
++            : count === 0 ? emptyState.implicitHeight
++            : Math.min(contentHeight, (Tokens.font.body.large.pointSize + Tokens.padding.small) * 10)
++        enabled: root.props.recordingListExpanded
+         clip: true
+ 
+         StyledScrollBar.vertical: StyledScrollBar {
+@@ -160,6 +131,8 @@ ColumnLayout {
+         }
+ 
+         Loader {
++            id: emptyState
++
+             asynchronous: true
+             anchors.centerIn: parent
+ 
