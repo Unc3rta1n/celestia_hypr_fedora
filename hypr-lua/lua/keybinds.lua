@@ -52,16 +52,15 @@ local locked_repeating = { locked = true, repeating = true }
 ---------------------------------------------------------------- STANDARD
 section("Apps")
 -- global "caelestia:launcher" toggles on key *release*, which a normal bind never delivers -> use IPC.
--- caelestia ignores its launcher while a fullscreen window is focused (its panels sit under it),
--- so fall back to fuzzel there (overlay layer, drawn above fullscreen).
+-- Overlay app picker stays above fullscreen windows.
 bind(M("SPACE"), function()
     local w = hl.get_active_window()
     if w and w.fullscreen == 2 then
-        hl.dispatch(exec("pkill -x fuzzel || fuzzel"))
+        hl.dispatch(shell("quickmenu open apps"))
     else
         hl.dispatch(shell("drawers toggle launcher"))
     end
-end, "app launcher (caelestia; fuzzel in fullscreen)")                    -- was rofi drun
+end, "app launcher (caelestia)")
 bind(M("Return"), exec(v.term), "Open terminal")
 bind(M("code:26"), exec(v.files), "file manager")                                   -- E
 bind(M("SHIFT + code:26"), exec(v.tuiFiles), "file manager (yazi)")                 -- E
@@ -71,7 +70,7 @@ bind(M("code:54"), exec("qs -c caelestia ipc call ssh open || " .. S .. "/menus.
 section("Tools")
 bind(M("code:28"), launcher_with(">scheme "), "colour scheme switcher (caelestia)") -- T, was wallust ThemeChanger
 bind(M("ALT + code:27"), exec(v.caelestiaRestart), "restart shell (caelestia)")    -- R, was Refresh.sh (waybar/swaync)
-bind(M("ALT + code:26"), exec("pkill fuzzel || caelestia emoji -p"), "emoji menu") -- E, was RofiEmoji
+bind(M("ALT + code:26"), shell("quickmenu open emoji"), "emoji menu") -- E, was RofiEmoji
 bind(M("ALT + code:32"), function()                                                 -- O, was ChangeBlur.sh
     local passes = tonumber(hl.get_config("decoration.blur.passes")) or 2
     if passes == 2 then
@@ -82,7 +81,7 @@ bind(M("ALT + code:32"), function()                                             
         util.notify("Normal Blur")
     end
 end, "toggle blur")
-bind(M("code:55"), exec(S .. "/clipboard.sh"), "clipboard manager (bottom, image previews)") -- V (was Super+Alt+V)
+bind(M("code:55"), exec("qs -c caelestia ipc call clipboard open || " .. S .. "/clipboard.sh"), "clipboard manager (caelestia)") -- V (was Super+Alt+V)
 bind(M("CTRL + code:45"), launcher_with(">scheme "), "colour scheme (caelestia; recolours ghostty too)") -- K
 section("Capture")
 -- caelestia area picker: per-monitor capture (slurp/grim -g broke across the rotated monitor), click snaps to a window
@@ -263,7 +262,7 @@ bind("ALT + F6", exec(S .. "/screenshot.sh active"), "screenshot (active window)
 ---------------------------------------------------------------- USER (UserConfigs/UserKeybinds.conf)
 section("Apps")
 bind(M("code:56"), exec('xdg-open "https://"'), "open default browser")                           -- B
-bind(M("code:39"), exec(S .. "/menus.sh search"), "web search")                                   -- S
+bind(M("code:39"), shell("quickmenu open search"), "web search")                                   -- S
 section("Shell")
 bind(M("SHIFT + code:57"), global("sidebar"), "notification panel (caelestia)")                   -- N, was swaync-client
 bind(M("code:25"), launcher_with(">wallpaper "), "select wallpaper (caelestia)")      -- W, was WallpaperSelect (rofi+swww)
@@ -279,9 +278,9 @@ section("Media")
 bind(M("SHIFT + code:43"), exec(S .. "/Toggle-Active-Window-Audio.sh"), "Toggle Mute/Unmute for Active-Window") -- H
 section("Tools")
 bind(M("SHIFT + code:42"), shell("gameMode toggle"), "toggle game mode")                          -- G
-bind(M("SHIFT + code:32"), exec(S .. "/menus.sh zsh-theme"), "change oh-my-zsh theme")             -- O
-bind(M("SHIFT + code:38"), exec(S .. "/menus.sh animations"), "animations menu")                   -- A
+bind(M("SHIFT + code:32"), shell("quickmenu open zsh"), "change oh-my-zsh theme")             -- O
+bind(M("SHIFT + code:38"), shell("quickmenu open animations"), "animations menu")                   -- A
 bind(M("code:57"), exec(S .. "/Hyprsunset.sh toggle"), "toggle night light")                     -- N
 -- office WireGuard (NetworkManager "wg0", was waybar custom/vpn); caelestia toasts the state change
 bind(M("SHIFT + code:25"), exec([[sh -c 'if nmcli -t -f NAME connection show --active | grep -qx wg0; then nmcli connection down wg0; else nmcli connection up wg0 || notify-send -u critical "VPN" "wg0 не поднялся"; fi']]), "office VPN wg0 on/off") -- W
-bind(M("code:43"), exec(S .. "/menus.sh keys"), "help / cheat sheet (all binds)")                 -- H
+bind(M("code:43"), exec("qs -c caelestia ipc call keyhints open || " .. S .. "/menus.sh keys"), "help / cheat sheet (all binds)")                 -- H

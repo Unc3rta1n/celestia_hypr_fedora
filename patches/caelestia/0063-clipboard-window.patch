@@ -1,0 +1,272 @@
+diff --git a/tmp/caelestia-clipboard/modules/clipboard/ClipboardWindow.qml b/modules/clipboard/ClipboardWindow.qml
+new file mode 100644
+index 0000000..b0dc001
+--- /dev/null
++++ b/modules/clipboard/ClipboardWindow.qml
+@@ -0,0 +1,241 @@
++import QtQuick
++import QtQuick.Layouts
++import QtQuick.Controls
++import Quickshell
++import Quickshell.Io
++import Quickshell.Hyprland
++import Quickshell.Wayland
++import Caelestia.Config
++import qs.components
++import qs.components.controls
++import qs.components.containers
++import qs.services
++
++StyledWindow {
++    id: root
++    property var entries: []
++    property string targetAddress: ""
++    property string targetClass: ""
++    property bool confirmWipe: false
++    property string error: ""
++    property string hoveredId: ""
++    property string requestedId: ""
++    property real hoveredY: 0
++    readonly property string helper: Quickshell.env("HOME") + "/.config/hypr/scripts/clipboard.sh"
++    readonly property string cache: (Quickshell.env("XDG_CACHE_HOME") || Quickshell.env("HOME") + "/.cache") + "/cliphist-img/"
++    name: "clipboard"
++    implicitWidth: 500
++    implicitHeight: 500
++    anchors.bottom: true
++    margins.bottom: 16
++    WlrLayershell.exclusionMode: ExclusionMode.Ignore
++    WlrLayershell.layer: WlrLayer.Overlay
++    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
++    visible: false
++    contentItem.Config.screen: screen?.name ?? ""
++    contentItem.Tokens.screen: screen?.name ?? ""
++
++    function open(): void {
++        if (visible) { visible = false; previewPopup.close(); return; }
++        if (listProcess.running) {
++            if (listProcess.opening) listProcess.opening = false;
++            return;
++        }
++        screen = Quickshell.screens.find(s => Hypr.monitorFor(s) === Hypr.focusedMonitor) ?? Quickshell.screens[0];
++        searchField.text = "";
++        confirmWipe = false;
++        error = "";
++        listProcess.opening = true;
++        listProcess.running = true;
++    }
++    function selectEntry(entry): void {
++        root.visible = false;
++        Quickshell.execDetached([helper, "--paste", entry.id, targetAddress, targetClass]);
++    }
++    function deleteEntry(entry): void {
++        if (actionProcess.running) return;
++        actionProcess.command = [helper, "--delete", entry.id];
++        actionProcess.running = true;
++    }
++    HyprlandFocusGrab {
++        active: root.visible
++        windows: [root]
++        onCleared: root.visible = false
++    }
++    Process {
++        id: listProcess
++        property bool opening: false
++        command: [root.helper, "--list"]
++        stdout: StdioCollector {
++            onStreamFinished: {
++                try {
++                    const result = JSON.parse(text);
++                    root.entries = result.entries;
++                    if (listProcess.opening) {
++                        root.targetAddress = result.window.address ?? "";
++                        root.targetClass = (result.window.class ?? "").toLowerCase();
++                        root.visible = true;
++                        searchField.forceActiveFocus();
++                    }
++                } catch (e) {
++                    if (listProcess.opening || root.visible) {
++                        root.error = "Could not load clipboard history";
++                        if (listProcess.opening) root.visible = true;
++                    }
++                }
++                listProcess.opening = false;
++            }
++        }
++    }
++    Process {
++        id: actionProcess
++        onExited: function(exitCode, exitStatus) {
++            if (exitCode === 0 && root.visible && !listProcess.running) listProcess.running = true;
++            else if (exitCode !== 0 && root.visible) root.error = "Could not update clipboard history";
++        }
++    }
++    Timer {
++        id: hoverTimer
++        interval: 400
++        onTriggered: {
++            if (!root.hoveredId || previewProcess.running) return;
++            root.requestedId = root.hoveredId;
++            previewProcess.command = ["cliphist", "decode", root.requestedId];
++            previewProcess.running = true;
++        }
++    }
++    Process {
++        id: previewProcess
++        stdout: StdioCollector {
++            onStreamFinished: {
++                if (root.requestedId === root.hoveredId && root.visible) {
++                    previewText.text = text;
++                    previewPopup.y = Math.max(0, root.hoveredY - previewPopup.height - 4);
++                    previewPopup.open();
++                }
++            }
++        }
++        onExited: {
++            if (root.hoveredId && root.hoveredId !== root.requestedId)
++                hoverTimer.restart();
++        }
++    }
++    Popup {
++        id: previewPopup
++        parent: root.contentItem
++        x: 12
++        width: root.width - 24
++        height: Math.min(180, previewText.implicitHeight + 24)
++        padding: 12
++        closePolicy: Popup.NoAutoClose
++        background: StyledRect { color: Colours.palette.m3surfaceContainer; radius: Tokens.rounding.medium }
++        contentItem: ScrollView {
++            clip: true
++            TextArea {
++                id: previewText
++                readOnly: true
++                selectByMouse: false
++                wrapMode: TextEdit.Wrap
++                color: Colours.palette.m3onSurface
++                background: null
++            }
++        }
++    }
++    StyledRect { anchors.fill: parent; color: Colours.tPalette.m3surface; radius: Tokens.rounding.extraLarge }
++    ColumnLayout {
++        anchors.fill: parent
++        anchors.margins: 16
++        spacing: 8
++        Keys.onEscapePressed: root.visible = false
++        RowLayout {
++            Layout.fillWidth: true
++            StyledText { text: "Clipboard history"; font: Tokens.font.title.large; Layout.fillWidth: true }
++            TextButton { visible: root.confirmWipe; text: "Cancel"; onClicked: root.confirmWipe = false }
++            TextButton {
++                text: root.confirmWipe ? "Confirm" : "Clear all"
++                inactiveColour: Colours.palette.m3error
++                inactiveOnColour: Colours.palette.m3onError
++                disabled: actionProcess.running
++                onClicked: {
++                    if (root.confirmWipe) {
++                        actionProcess.command = [root.helper, "--wipe"];
++                        actionProcess.running = true;
++                        root.confirmWipe = false;
++                    } else root.confirmWipe = true;
++                }
++            }
++            TextButton { text: "Close"; onClicked: root.visible = false }
++        }
++        StyledText { visible: root.confirmWipe; text: "Clear all clipboard history?"; Layout.fillWidth: true }
++        StyledText { visible: !!root.error; text: root.error; color: Colours.palette.m3error; Layout.fillWidth: true }
++        StyledTextField {
++            id: searchField
++            placeholderText: "Search clipboard"
++            leadingIcon: "search"
++            Layout.fillWidth: true
++            onTextChanged: entryList.currentIndex = 0
++            Keys.onDownPressed: entryList.currentIndex = Math.min(entryList.count - 1, entryList.currentIndex + 1)
++            Keys.onUpPressed: entryList.currentIndex = Math.max(0, entryList.currentIndex - 1)
++            Keys.onPressed: event => {
++                if (event.key === Qt.Key_Delete && (event.modifiers & Qt.ControlModifier) && entryList.count) {
++                    root.deleteEntry(entryList.model[entryList.currentIndex]); event.accepted = true;
++                } else if (event.key === Qt.Key_Delete && (event.modifiers & Qt.AltModifier)) {
++                    root.confirmWipe = true; event.accepted = true;
++                }
++            }
++            onAccepted: if (entryList.count) root.selectEntry(entryList.model[entryList.currentIndex])
++        }
++        ListView {
++            id: entryList
++            Layout.fillWidth: true
++            Layout.fillHeight: true
++            clip: true
++            spacing: 3
++            model: root.entries.filter(entry => entry.label.toLowerCase().includes(searchField.text.toLowerCase()))
++            delegate: StyledRect {
++                id: row
++                required property var modelData
++                required property int index
++                width: entryList.width
++                readonly property bool isImage: modelData.label.startsWith("🖼")
++                height: isImage ? 240 : 52
++                radius: Tokens.rounding.medium
++                color: entryList.currentIndex === index ? Colours.tPalette.m3secondaryContainer : Colours.tPalette.m3surfaceContainer
++                Image {
++                    visible: row.isImage
++                    anchors.fill: parent
++                    anchors.leftMargin: 8
++                    anchors.topMargin: 8
++                    anchors.bottomMargin: 8
++                    anchors.rightMargin: deleteButton.width + 16
++                    source: visible ? "file://" + root.cache + row.modelData.id + ".png" : ""
++                    fillMode: Image.PreserveAspectFit
++                    asynchronous: true
++                }
++                RowLayout {
++                    anchors.fill: parent
++                    anchors.leftMargin: 12
++                    anchors.rightMargin: 8
++                    StyledText { visible: !row.isImage; text: row.modelData.label; Layout.fillWidth: true; elide: Text.ElideRight; maximumLineCount: 2; wrapMode: Text.Wrap }
++                    Item { visible: row.isImage; Layout.fillWidth: true }
++                    TextButton { id: deleteButton; text: "Delete"; onClicked: root.deleteEntry(row.modelData) }
++                }
++                StateLayer { radius: row.radius; onClicked: root.selectEntry(row.modelData); z: -1 }
++                TapHandler { onTapped: root.selectEntry(row.modelData) }
++                HoverHandler {
++                    onHoveredChanged: {
++                        if (hovered && !row.isImage) {
++                            root.hoveredId = row.modelData.id;
++                            root.hoveredY = row.mapToItem(root.contentItem, 0, 0).y;
++                            hoverTimer.restart();
++                        } else if (root.hoveredId === row.modelData.id) {
++                            root.hoveredId = "";
++                            hoverTimer.stop();
++                            previewPopup.close();
++                        }
++                    }
++                }
++            }
++        }
++    }
++}
+diff --git a/shell.qml b/shell.qml
+index 2a8f8bb..9720796 100644
+--- a/shell.qml
++++ b/shell.qml
+@@ -13,6 +13,7 @@ import qs.modules.areapicker
+ import qs.modules.background
+ import qs.modules.drawers
+ import qs.modules.ssh
++import qs.modules.clipboard
+ import qs.modules.lock
+ import qs.daemons
+ 
+@@ -48,6 +49,12 @@ ShellRoot {
+     }
+     SshWindow { id: sshWindow }
+ 
++    IpcHandler {
++        target: "clipboard"
++        function open(): void { clipboardWindow.open(); }
++    }
++    ClipboardWindow { id: clipboardWindow }
++
+     // Modules
+     Background {}
+     Drawers {}

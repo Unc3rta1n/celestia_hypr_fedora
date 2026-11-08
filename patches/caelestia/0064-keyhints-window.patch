@@ -1,0 +1,161 @@
+diff --git a/tmp/caelestia-keys/modules/keyhints/KeyHintsWindow.qml b/modules/keyhints/KeyHintsWindow.qml
+new file mode 100644
+index 0000000..f53d015
+--- /dev/null
++++ b/modules/keyhints/KeyHintsWindow.qml
+@@ -0,0 +1,130 @@
++import QtQuick
++import QtQuick.Layouts
++import Quickshell
++import Quickshell.Io
++import Quickshell.Hyprland
++import Quickshell.Wayland
++import Caelestia.Config
++import qs.components
++import qs.components.controls
++import qs.components.containers
++import qs.services
++
++StyledWindow {
++    id: root
++    property var entries: []
++    property string error: ""
++    readonly property var groups: ["Apps", "Shell", "Windows", "Workspaces", "Layout", "Capture", "Media", "Tools", "System", "Laptop"]
++    name: "keyhints"
++    implicitWidth: 680
++    implicitHeight: 650
++    WlrLayershell.exclusionMode: ExclusionMode.Ignore
++    WlrLayershell.layer: WlrLayer.Overlay
++    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
++    visible: false
++    contentItem.Config.screen: screen?.name ?? ""
++    contentItem.Tokens.screen: screen?.name ?? ""
++
++    function open(): void {
++        if (visible) { visible = false; return; }
++        screen = Quickshell.screens.find(s => Hypr.monitorFor(s) === Hypr.focusedMonitor) ?? Quickshell.screens[0];
++        search.text = "";
++        error = "";
++        entries = [];
++        visible = true;
++        search.forceActiveFocus();
++        if (!listProcess.running) listProcess.running = true;
++    }
++    function parseBinds(text): void {
++        try {
++            const seen = new Set();
++            const result = [];
++            for (const bind of JSON.parse(text)) {
++                if (!bind.has_description || !bind.description) continue;
++                const fields = bind.description.split("|");
++                if (fields.length !== 3 || seen.has(bind.description)) continue;
++                seen.add(bind.description);
++                result.push({ category: fields[0], keys: fields[1], description: fields[2] });
++            }
++            result.sort((a, b) => {
++                const ai = groups.indexOf(a.category), bi = groups.indexOf(b.category);
++                const rank = (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
++                return rank || a.category.localeCompare(b.category) || a.keys.localeCompare(b.keys);
++            });
++            entries = result;
++        } catch (e) { error = "Could not load shortcuts"; }
++    }
++    HyprlandFocusGrab {
++        active: root.visible
++        windows: [root]
++        onCleared: root.visible = false
++    }
++    Process {
++        id: listProcess
++        command: ["hyprctl", "binds", "-j"]
++        stdout: StdioCollector { onStreamFinished: root.parseBinds(text) }
++        onExited: function(exitCode, exitStatus) {
++            if (exitCode !== 0) root.error = "Could not load shortcuts";
++        }
++    }
++    StyledRect { anchors.fill: parent; color: Colours.tPalette.m3surface; radius: Tokens.rounding.extraLarge }
++    ColumnLayout {
++        anchors.fill: parent
++        anchors.margins: 20
++        spacing: 10
++        Keys.onEscapePressed: root.visible = false
++        RowLayout {
++            Layout.fillWidth: true
++            StyledText { text: "Keyboard shortcuts"; font: Tokens.font.title.large; Layout.fillWidth: true }
++            TextButton { text: "Close"; onClicked: root.visible = false }
++        }
++        StyledText { visible: !!root.error; text: root.error; color: Colours.palette.m3error; Layout.fillWidth: true }
++        StyledTextField {
++            id: search
++            placeholderText: "Search shortcuts"
++            leadingIcon: "search"
++            Layout.fillWidth: true
++            Keys.onDownPressed: list.currentIndex = Math.min(list.count - 1, list.currentIndex + 1)
++            Keys.onUpPressed: list.currentIndex = Math.max(0, list.currentIndex - 1)
++        }
++        StyledText { visible: !root.error && list.count === 0 && !listProcess.running; text: "No shortcuts found"; Layout.fillWidth: true }
++        ListView {
++            id: list
++            Layout.fillWidth: true
++            Layout.fillHeight: true
++            clip: true
++            spacing: 3
++            model: root.entries.filter(entry => (entry.category + " " + entry.keys + " " + entry.description).toLowerCase().includes(search.text.toLowerCase()))
++            delegate: Column {
++                id: item
++                required property var modelData
++                required property int index
++                width: list.width
++                spacing: 3
++                StyledText {
++                    visible: item.index === 0 || list.model[item.index - 1].category !== item.modelData.category
++                    width: parent.width
++                    height: visible ? 32 : 0
++                    verticalAlignment: Text.AlignVCenter
++                    text: item.modelData.category
++                    font: Tokens.font.title.small
++                    color: Colours.palette.m3primary
++                }
++                StyledRect {
++                    width: parent.width
++                    height: Math.max(44, description.implicitHeight + 16, keys.implicitHeight + 16)
++                    radius: Tokens.rounding.medium
++                    color: Colours.tPalette.m3surfaceContainer
++                    RowLayout {
++                        anchors.fill: parent
++                        anchors.leftMargin: 12
++                        anchors.rightMargin: 12
++                        spacing: 12
++                        StyledText { id: keys; text: item.modelData.keys; Layout.preferredWidth: 190; wrapMode: Text.Wrap; color: Colours.palette.m3primary }
++                        StyledText { id: description; text: item.modelData.description; Layout.fillWidth: true; wrapMode: Text.Wrap }
++                    }
++                }
++            }
++        }
++    }
++}
+diff --git a/shell.qml b/shell.qml
+index 9720796..7c44072 100644
+--- a/shell.qml
++++ b/shell.qml
+@@ -14,6 +14,7 @@ import qs.modules.background
+ import qs.modules.drawers
+ import qs.modules.ssh
+ import qs.modules.clipboard
++import qs.modules.keyhints
+ import qs.modules.lock
+ import qs.daemons
+ 
+@@ -55,6 +56,12 @@ ShellRoot {
+     }
+     ClipboardWindow { id: clipboardWindow }
+ 
++    IpcHandler {
++        target: "keyhints"
++        function open(): void { keyHintsWindow.open(); }
++    }
++    KeyHintsWindow { id: keyHintsWindow }
++
+     // Modules
+     Background {}
+     Drawers {}

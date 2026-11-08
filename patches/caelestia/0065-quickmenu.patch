@@ -1,0 +1,154 @@
+diff --git a/tmp/caelestia-menus/modules/quickmenu/QuickMenu.qml b/modules/quickmenu/QuickMenu.qml
+new file mode 100644
+index 0000000..c3a22ca
+--- /dev/null
++++ b/modules/quickmenu/QuickMenu.qml
+@@ -0,0 +1,123 @@
++import QtQuick
++import QtQuick.Layouts
++import Quickshell
++import Quickshell.Io
++import Quickshell.Hyprland
++import Quickshell.Wayland
++import Caelestia.Config
++import qs.components
++import qs.components.controls
++import qs.components.containers
++import qs.services
++import qs.modules.launcher.services
++
++StyledWindow {
++    id: root
++    property string mode: ""
++    property string error: ""
++    property var entries: []
++    readonly property string helper: Quickshell.env("HOME") + "/.config/hypr/scripts/caelestia-menu.sh"
++    name: "quickmenu"
++    implicitWidth: mode === "search" ? 480 : 560
++    implicitHeight: mode === "search" ? 84 : 540
++    anchors.bottom: mode !== "search"
++    margins.bottom: mode === "search" ? 0 : 16
++    WlrLayershell.exclusionMode: ExclusionMode.Ignore
++    WlrLayershell.layer: WlrLayer.Overlay
++    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
++    visible: false
++    contentItem.Config.screen: screen?.name ?? ""
++    contentItem.Tokens.screen: screen?.name ?? ""
++
++    function open(kind: string): void {
++        if (visible && mode === kind) { visible = false; return; }
++        if (loader.running) return;
++        mode = kind;
++        error = "";
++        entries = [];
++        search.text = "";
++        screen = Quickshell.screens.find(s => Hypr.monitorFor(s) === Hypr.focusedMonitor) ?? Quickshell.screens[0];
++        visible = true;
++        search.forceActiveFocus();
++        if (mode !== "search" && mode !== "apps") {
++            loader.command = [helper, mode, "list"];
++            loader.running = true;
++        }
++    }
++    function choose(value): void {
++        if (mode === "apps") {
++            if (!value) return;
++            Apps.launch(value);
++        } else if (mode === "search") {
++            if (!search.text.trim()) return;
++            Quickshell.execDetached(["xdg-open", "https://www.google.com/search?q=" + encodeURIComponent(search.text)]);
++        } else {
++            if (!value || action.running) return;
++            action.command = [helper, mode, "apply", mode === "emoji" ? value.split(/\s+/)[0] : value];
++            action.running = true;
++            return;
++        }
++        visible = false;
++    }
++    HyprlandFocusGrab { active: root.visible; windows: [root]; onCleared: root.visible = false }
++    Process {
++        id: loader
++        stdout: StdioCollector { onStreamFinished: root.entries = text.split("\n").filter(line => line.length > 0) }
++        onExited: function(exitCode, exitStatus) { if (exitCode !== 0) root.error = "Could not load menu"; }
++    }
++    Process {
++        id: action
++        onExited: function(exitCode, exitStatus) {
++            if (exitCode === 0) root.visible = false;
++            else root.error = "Could not apply selection";
++        }
++    }
++    StyledRect { anchors.fill: parent; color: Colours.tPalette.m3surface; radius: Tokens.rounding.extraLarge }
++    ColumnLayout {
++        anchors.fill: parent
++        anchors.margins: 16
++        spacing: 8
++        Keys.onEscapePressed: root.visible = false
++        RowLayout {
++            visible: root.mode !== "search"
++            Layout.fillWidth: true
++            StyledText {
++                text: ({search: "Web search", emoji: "Emoji", zsh: "Zsh theme", animations: "Animations", ghostty: "Ghostty theme", apps: "Applications"})[root.mode] ?? "Menu"
++                font: Tokens.font.title.large
++                Layout.fillWidth: true
++            }
++            TextButton { text: "Close"; onClicked: root.visible = false }
++        }
++        StyledText { visible: !!root.error; text: root.error; color: Colours.palette.m3error; Layout.fillWidth: true }
++        StyledTextField {
++            id: search
++            placeholderText: root.mode === "search" ? "Search the web" : "Search"
++            leadingIcon: "search"
++            Layout.fillWidth: true
++            onTextChanged: list.currentIndex = 0
++            Keys.onDownPressed: list.currentIndex = Math.min(list.count - 1, list.currentIndex + 1)
++            Keys.onUpPressed: list.currentIndex = Math.max(0, list.currentIndex - 1)
++            onAccepted: root.choose(root.mode === "search" ? text : list.model[list.currentIndex])
++        }
++        ListView {
++            id: list
++            visible: root.mode !== "search"
++            Layout.fillWidth: true
++            Layout.fillHeight: true
++            clip: true
++            spacing: 3
++            model: root.mode === "apps" ? Apps.search(search.text) : root.entries.filter(line => line.toLowerCase().includes(search.text.toLowerCase()))
++            delegate: StyledRect {
++                id: row
++                required property var modelData
++                required property int index
++                width: list.width
++                height: 48
++                radius: Tokens.rounding.medium
++                color: list.currentIndex === index ? Colours.tPalette.m3secondaryContainer : Colours.tPalette.m3surfaceContainer
++                StyledText { anchors.fill: parent; anchors.leftMargin: 12; anchors.rightMargin: 12; verticalAlignment: Text.AlignVCenter; text: root.mode === "apps" ? row.modelData.name : row.modelData; elide: Text.ElideRight }
++                StateLayer { radius: row.radius; onClicked: root.choose(row.modelData) }
++            }
++        }
++    }
++}
+diff --git a/shell.qml b/shell.qml
+index 7c44072..c63fab9 100644
+--- a/shell.qml
++++ b/shell.qml
+@@ -15,6 +15,7 @@ import qs.modules.drawers
+ import qs.modules.ssh
+ import qs.modules.clipboard
+ import qs.modules.keyhints
++import qs.modules.quickmenu
+ import qs.modules.lock
+ import qs.daemons
+ 
+@@ -62,6 +63,12 @@ ShellRoot {
+     }
+     KeyHintsWindow { id: keyHintsWindow }
+ 
++    IpcHandler {
++        target: "quickmenu"
++        function open(mode: string): void { quickMenu.open(mode); }
++    }
++    QuickMenu { id: quickMenu }
++
+     // Modules
+     Background {}
+     Drawers {}

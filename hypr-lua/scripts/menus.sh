@@ -92,11 +92,11 @@ animations() {
 }
 
 case ${1:-} in
-search) search ;;
+search) exec qs -c caelestia ipc call quickmenu open search ;;
 ssh) ssh_menu ;;
 keys) keys ;;
-zsh-theme) zsh_theme ;;
-term-theme) term_theme ;;
-animations) animations ;;
+zsh-theme) exec qs -c caelestia ipc call quickmenu open zsh ;;
+term-theme) exec qs -c caelestia ipc call quickmenu open ghostty ;;
+animations) exec qs -c caelestia ipc call quickmenu open animations ;;
 *) sed -n '2,9p' "$0" >&2; exit 1 ;;
 esac

@@ -118,6 +118,13 @@ upstream moved and the patches still apply (`update-caelestia.sh --check --no-qm
 Super+H shows every bind, grouped. New ones: Super+` Telegram scratchpad, Super+U special workspace,
 Super+Shift+T OCR, Super+Alt+Q QR code, Super+Shift+R / Super+Ctrl+R record area / monitor+sound (again = stop),
 Super+Ctrl+Shift+R pause.
+
+The Caelestia menus use Super+S for web search, Super+Alt+E for emoji (select to copy),
+Super+Shift+O for the zsh theme and Super+Shift+A for animations. Super+Space uses an
+application picker above fullscreen windows. The Ghostty theme picker is available through
+`qs -c caelestia ipc call quickmenu open ghostty`; it has no default binding. Emoji data comes
+from the installed Caelestia CLI (`caelestia emoji`). Super+C, Super+V and Super+H retain
+fuzzel fallbacks when their Caelestia IPC handlers are unavailable.
 36. bar `gpu` entry: NVIDIA dGPU load % and temperature while it is busy (>=5 % or >=8 W); polled only while the card is runtime-active, so it is never woken
 37. now-playing toast shows the track cover instead of the music note (`ToastItem` renders the `icon` as an image when it is a file/http URL; `Players` passes `getArtUrl`)
 38. dashboard lyrics fallback: when LRCLIB finds nothing, `LyricList` shows plain lyrics from the Yandex Music catalogue (`Players.getLyrics`: search, then `/tracks/{id}/supplement`, no auth); untimed, so no highlight or click-to-seek
@@ -149,6 +156,12 @@ Super+Ctrl+Shift+R pause.
 61. Utilities: single-row Keep awake and recorder cards, smaller padding and icons; recording history opens from a library button instead of always occupying space. Preserve recording modes, active timer/pause/stop controls, history actions and idle inhibition. Aquarium remains deferred.
 
 62. SSH centered overlay: search, browse and connect to hosts from `~/.ssh/config`, or add a host with its password stored in GNOME Keyring. Requires `zsh/ssh-add-server` installed in `~/.local/bin/` and `secret-tool`.
+
+63. Clipboard bottom overlay: search and paste cliphist entries with image previews, delete individual entries or clear history. Super+V opens the panel; Ctrl+Del deletes the selected item and Alt+Del asks to clear history.
+
+64. Keyboard shortcuts overlay: Super+H opens a searchable, grouped list of the current Hyprland bindings, including layout-independent keycodes.
+
+65. Caelestia quick menus: Super+S web search, Super+Alt+E emoji, Super+Shift+O zsh theme, Super+Shift+A animations, and Super+Space application search over fullscreen windows. The `quickmenu open ghostty` IPC also opens the Ghostty theme selector.
 
 Cursor themes can be managed by the standalone [Cursor Theme Manager fork](https://github.com/Unc3rta1n/cursor-theme-manager)
 checked out at `~/cursor-theme-manager`. Hyprland starts its hidden host at login to

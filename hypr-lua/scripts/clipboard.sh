@@ -6,14 +6,18 @@ CONF=$HOME/.config/fuzzel/clipboard.ini
 CACHE=${XDG_CACHE_HOME:-$HOME/.cache}/cliphist-img
 mkdir -p "$CACHE"
 
-pkill -x fuzzel && exit 0
+if [[ ${1:-} != --* ]]; then
+    pkill -x fuzzel && exit 0
+fi
 
 build_list() {
     cliphist list | while IFS=$'\t' read -r id content; do
         if [[ $content =~ ^\[\[\ binary\ data.*(png|jpe?g|webp|bmp) ]]; then
             img=$CACHE/$id.png
             [[ -s $img ]] || cliphist decode "$id" >"$img" 2>/dev/null
-            printf '%s\t🖼  %s\0icon\x1f%s\n' "$id" "$(sed "s/^\[\[ binary data //; s/ \]\]$//" <<<"$content")" "$img"
+            content=${content#"[[ binary data "}
+            content=${content%" ]]"}
+            printf '%s\t🖼  %s\0icon\x1f%s\n' "$id" "$content" "$img"
         else
             printf '%s\t%s\n' "$id" "$content"
         fi
@@ -45,6 +49,28 @@ paste() {
     # V by keycode: a key name is looked up in the active layout, and Russian has no "V"
     hyprctl dispatch "hl.dsp.send_shortcut({ mods = \"$mods\", key = \"code:55\" })" >/dev/null
 }
+
+case ${1:-} in
+--list)
+    window=$(hyprctl activewindow -j)
+    entries=$(build_list | tr '\0' '\n' | awk -F '\t' 'NF >= 2 && $1 ~ /^[0-9]+$/ { print $1 "\t" $2 }' | jq -Rsc 'split("\n") | map(select(length > 0) | split("\t") | {id: .[0], label: .[1]})')
+    jq -nc --argjson window "$window" --argjson entries "$entries" '{window: $window, entries: $entries}'
+    exit ;;
+--paste)
+    win=$3 class=$4
+    cliphist decode "$2" | wl-copy || exit 1
+    sleep 0.1
+    paste
+    exit ;;
+--delete)
+    cliphist list | awk -F '\t' -v id="$2" '$1 == id' | cliphist delete
+    rm -f "$CACHE/$2.png"
+    exit ;;
+--wipe)
+    cliphist wipe
+    rm -f "$CACHE"/*.png
+    exit ;;
+esac
 
 while :; do
     sel=$(build_list | fuzzel --dmenu --config "$CONF" --with-nth=2 --accept-nth=1 --counter)
