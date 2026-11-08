@@ -10,7 +10,7 @@ local M = {
 
     -- UserConfigs/01-UserDefaults.conf
     term         = "ghostty",
-    files        = "dolphin",
+    files        = "env QT_QPA_PLATFORMTHEME=kde QT_STYLE_OVERRIDE=Fusion dolphin",
     tuiFiles     = "ghostty +new-window --title=yazi -e yazi", -- +new-window: single-instance ghostty ignores plain CLI flags
     edit         = os.getenv("EDITOR") or "nano",
     searchEngine = "https://www.google.com/search?q={}",

@@ -13,6 +13,10 @@ replaced by a locally patched [caelestia-shell](https://github.com/caelestia-dot
 
 Then log out/in. Rollback to the hyprlang config: `./deploy-lua.sh --rollback`.
 
+Dolphin uses the `plasma-integration` Qt platform theme and Fusion style so its
+colours follow Caelestia without changing the global qt6ct/Kvantum settings.
+Install it with `sudo dnf install --setopt=install_weak_deps=False plasma-integration`.
+
 ### Hyprland crash logs
 
 `scripts/hyprland-log` copies each session's runtime log into the persistent system

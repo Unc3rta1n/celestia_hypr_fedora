@@ -63,6 +63,15 @@ else
 fi
 
 step "Dolphin: default file manager, starts in \$HOME, ghostty as terminal"
+# Keep Dolphin on the Caelestia KDE palette without changing the global Qt theme.
+mkdir -p "$HOME/.local/share/applications" "$HOME/.config/systemd/user/plasma-dolphin.service.d"
+sed 's|^Exec=dolphin |Exec=env QT_QPA_PLATFORMTHEME=kde QT_STYLE_OVERRIDE=Fusion dolphin |' \
+    /usr/share/applications/org.kde.dolphin.desktop > "$HOME/.local/share/applications/org.kde.dolphin.desktop"
+cat > "$HOME/.config/systemd/user/plasma-dolphin.service.d/caelestia.conf" <<'EOF'
+[Service]
+Environment=QT_QPA_PLATFORMTHEME=kde QT_STYLE_OVERRIDE=Fusion
+EOF
+systemctl --user daemon-reload
 xdg-mime default org.kde.dolphin.desktop inode/directory
 kwriteconfig6 --file dolphinrc --group General --key RememberOpenedTabs false
 kwriteconfig6 --file dolphinrc --group General --key HomeUrl "$HOME"
