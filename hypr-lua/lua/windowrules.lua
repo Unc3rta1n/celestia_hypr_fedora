@@ -115,7 +115,7 @@ hl.window_rule({
 -- terminal tags
 hl.window_rule({
     match = {
-        class = "^(ghostty|wezterm|Alacritty|kitty|kitty-dropterm)$",
+        class = "^(ghostty|com\\.mitchellh\\.ghostty|wezterm|Alacritty|kitty|kitty-dropterm)$",
     },
     tag = "+terminal",
 })
@@ -152,7 +152,7 @@ hl.window_rule({
 
 hl.window_rule({
     match = {
-        class = "^(VSCode|code|code-url-handler)$",
+        class = "^(VSCode|com\\.microsoft\\.VSCode|code|code-url-handler)$",
     },
     tag = "+projects",
 })
@@ -277,7 +277,7 @@ hl.window_rule({
 -- file-manager tags
 hl.window_rule({
     match = {
-        class = "^([Tt]hunar|org.gnome.Nautilus|[Pp]cmanfm-qt|org.kde.dolphin)$",
+        class = "^([Tt]hunar|org.gnome.Nautilus|[Pp]cmanfm-qt|org.kde.dolphin|dolphin)$",
     },
     tag = "+file-manager",
 })
@@ -337,7 +337,7 @@ hl.window_rule({
 
 hl.window_rule({
     match = {
-        class = "^(gnome-disks|wihotspot(-gui)?)$",
+        class = "^(gnome-disks)$",
     },
     tag = "+settings",
 })
@@ -461,7 +461,6 @@ hl.window_rule({
         tag = "multimedia",
     },
     no_blur = true,
-    opacity = 1.0,
 })
 
 -- FLOAT
@@ -751,19 +750,6 @@ hl.window_rule({
 })
 
 hl.window_rule({
-    name = "mpv-float",
-    match = {
-        class = "mpv",
-    },
-    float = true,
-    move = "monitor_w*0.49 monitor_h*0.07",
-    opacity = "0.95 0.75",
-    pin = true,
-    keep_aspect_ratio = true,
-    size = "(monitor_w*0.5) (monitor_h*0.5)",
-})
-
-hl.window_rule({
     name = "Picture-in-Picture",
     match = {
         title = "^[Pp]icture-in-[Pp]icture$",
@@ -787,13 +773,6 @@ hl.window_rule({
     pin = true,
     keep_aspect_ratio = true,
     size = "(monitor_w*0.4) (monitor_h*0.4)",
-})
-
-hl.window_rule({
-    match = {
-        title = "^([Кк]артинка в [Кк]артинке)$",
-    },
-    opacity = "1.0 override 1.0 override",
 })
 
 -- Named rule for CachyOS Kernel Manager
@@ -1001,9 +980,13 @@ hl.window_rule({
     no_blur = true,
     opacity = 1.0,
     move = "monitor_w*0.49 monitor_h*0.07",
-    pin = true,
     keep_aspect_ratio = true,
     size = "(monitor_w*0.5) (monitor_h*0.5)",
+})
+
+hl.window_rule({
+    match = { class = "^(vlc)$" },
+    pin = true,
 })
 
 hl.window_rule({

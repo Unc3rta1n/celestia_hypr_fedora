@@ -11,7 +11,7 @@ replaced by a locally patched [caelestia-shell](https://github.com/caelestia-dot
 ./setup-desktop.sh       # ghostty/zsh, cursor, Dolphin, menus, overview (idempotent)
 ```
 
-Then log out/in. Rollback to the hyprlang config: `./deploy-lua.sh --rollback`.
+Then log out/in.
 
 Dolphin uses the `plasma-integration` Qt platform theme and Fusion style so its
 colours follow Caelestia without changing the global qt6ct/Kvantum settings.
@@ -61,7 +61,7 @@ A patch that no longer applies stops it before anything is installed. Rollback:
 | Path | What |
 |---|---|
 | `hypr-lua/` | source of `~/.config/hypr/{hyprland.lua,lua,scripts,UserScripts,animations}` |
-| `hypr/` | untouched copy of the original KoolDots config (converter input, reference) |
+| `hypr/` | original KoolDots config (converter input, reference; obsolete scripts removed) |
 | `patches/caelestia/` | shell patches, applied in order on every `install-caelestia.sh` run |
 | `patches/swappy/` | Ctrl+Z & co. on non-latin layouts |
 | `caelestia/` | `~/.config/caelestia/{shell,cli}.json` (copied only if missing) |

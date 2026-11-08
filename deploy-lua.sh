@@ -1,16 +1,13 @@
 #!/usr/bin/env bash
 # Install the Lua Hyprland config + caelestia configs into ~/.config.
-# Rollback: ./deploy-lua.sh --rollback  (removes hyprland.lua -> Hyprland uses hyprland.conf again)
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 H=$HOME/.config/hypr
 BK=$HOME/.config/hypr/.pre-lua-backup
 
-if [[ ${1:-} == --rollback ]]; then
-    rm -f "$H/hyprland.lua"
-    if [[ -d $BK ]]; then cp -a "$BK/scripts/." "$H/scripts/"; cp -a "$BK/UserScripts/." "$H/UserScripts/"; fi
-    echo "Rolled back. Log out/in (or: hyprctl reload full-reset), then start waybar/swaync as before."
-    exit 0
+if (( $# )); then
+    echo "Usage: $0" >&2
+    exit 2
 fi
 
 # keep originals of every script we overwrite

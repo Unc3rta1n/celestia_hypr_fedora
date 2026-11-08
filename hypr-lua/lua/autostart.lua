@@ -6,9 +6,6 @@ hl.on("hyprland.start", function()
     -- Preserve the compositor log across crashes and reboots.
     hl.exec_cmd(v.scriptsDir .. "/hyprland-log")
 
-    -- Initial boot (no-op while ~/.config/hypr/.initial_startup_done exists)
-    hl.exec_cmd(v.hyprDir .. "/initial-boot.sh")
-
     hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
     hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
     hl.exec_cmd(v.scriptsDir .. "/PortalHyprland.sh")
